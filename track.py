@@ -160,6 +160,7 @@ def main():
         print(f"[erro] fetch falhou: {e}", file=sys.stderr)
         sys.exit(1)
 
+    print(f"[debug] resposta bruta: {json.dumps(data, ensure_ascii=False)[:2000]}")
     new_events = extract_events(data)
     print(f"[ok] {len(new_events)} eventos no rastreio")
 
