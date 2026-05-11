@@ -1,3 +1,10 @@
 {
-  "events": []
+  "events": [],
+  "raw": {
+    "code": 999020032,
+    "msg": "验签失败",
+    "data": null,
+    "succ": false,
+    "fail": true
+  }
 }
