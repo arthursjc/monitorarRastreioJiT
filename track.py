@@ -204,7 +204,7 @@ def main():
     print(f"[novo] {len(new_only)} eventos novos")
     # Monta mensagem do WhatsApp
     lines = [f"Rastreio J&T {waybill} atualizado:"]
-    for ev in new_only[-5:]:  # no maximo 5 eventos na msg
+    for ev in new_only[:5]:  # no maximo 5 eventos na msg (mais recentes primeiro)
         lines.append(f"- {ev.get('time','')}: {ev.get('status','')} {ev.get('desc','')}".strip())
     message = "\n".join(lines)
 
