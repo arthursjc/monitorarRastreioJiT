@@ -1,0 +1,51 @@
+name: jt-tracker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # a cada 15 min (UTC, mas o intervalo nao muda)
+  workflow_dispatch:         # permite rodar manual pelo botao "Run workflow"
+
+permissions:
+  contents: write            # precisa pra commitar state.json de volta
+
+concurrency:
+  group: jt-tracker
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Run tracker
+        env:
+          WAYBILL_NO: ${{ secrets.WAYBILL_NO }}
+          CPF: ${{ secrets.CPF }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          JT_SIGN: ${{ secrets.JT_SIGN }}
+          JT_KEY: ${{ secrets.JT_KEY }}
+          JT_TIMESTAMP: ${{ secrets.JT_TIMESTAMP }}
+        run: python track.py
+
+      - name: Commit state se mudou
+        run: |
+          git config user.name  "jt-tracker-bot"
+          git config user.email "jt-tracker-bot@users.noreply.github.com"
+          if [[ -n "$(git status --porcelain state/)" ]]; then
+            git add state/
+            git commit -m "chore: atualiza state [skip ci]"
+            git push
+          else
+            echo "sem mudancas no state"
+          fi
