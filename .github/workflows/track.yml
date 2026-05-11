@@ -2,7 +2,7 @@ name: jt-tracker
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # a cada 15 min (UTC, mas o intervalo nao muda)
+    - cron: "*/5 * * * *"    # a cada 5 min
   workflow_dispatch:         # permite rodar manual pelo botao "Run workflow"
 
 permissions:
