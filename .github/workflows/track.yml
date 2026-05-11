@@ -33,9 +33,6 @@ jobs:
           CPF: ${{ secrets.CPF }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
-          JT_SIGN: ${{ secrets.JT_SIGN }}
-          JT_KEY: ${{ secrets.JT_KEY }}
-          JT_TIMESTAMP: ${{ secrets.JT_TIMESTAMP }}
         run: python track.py
 
       - name: Commit state se mudou

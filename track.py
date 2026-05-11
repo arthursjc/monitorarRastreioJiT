@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-Monitora o rastreio de uma encomenda J&T Express Brasil.
-Compara o estado atual com o anterior salvo em state/last_status.json
+Monitora o rastreio de encomendas J&T Express Brasil.
+Compara o estado atual com o anterior salvo em state/<waybill>.json
 e dispara um alerta no WhatsApp via CallMeBot quando houver evento novo.
 
 Variaveis de ambiente esperadas:
   CALLMEBOT_PHONE    Numero com codigo do pais, sem +. Ex: 5511999999999
   CALLMEBOT_APIKEY   API key do CallMeBot
-  WAYBILL_NO         Numero do rastreio. Ex: 888030695848780
+  WAYBILL_NO         Um ou mais numeros de rastreio separados por virgula.
+                     Ex: 888030695848780
+                     Ex: 888030695848780,888030695848781
   CPF                CPF do destinatario. Ex: 41795685867
 
 Opcionais:
-  STATE_PATH         Caminho do arquivo de estado. Default: state/last_status.json
+  STATE_DIR          Pasta dos arquivos de estado. Default: state
 """
 
 import hashlib
@@ -27,8 +29,6 @@ import requests
 
 JT_URL = "https://official.jtjms-br.com/official/logisticsTracking/v2/getDetailByWaybillNo"
 
-# Headers padrao reaproveitados do curl original. Se a J&T comecar a recusar,
-# atualize JT_SIGN/JT_TIMESTAMP via secrets do GitHub.
 DEFAULT_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
@@ -48,6 +48,9 @@ DEFAULT_HEADERS = {
     "timezone": "GMT-0300",
 }
 
+APP_ID = "3B29A9C5728BF3E1DB0C4D66B79748B7"
+JT_KEY = "94bbcac67ab47c736d530efe3e1dc358"
+
 
 def env(name, default=None, required=False):
     value = os.environ.get(name, default)
@@ -57,12 +60,7 @@ def env(name, default=None, required=False):
     return value
 
 
-APP_ID = "3B29A9C5728BF3E1DB0C4D66B79748B7"
-JT_KEY = "94bbcac67ab47c736d530efe3e1dc358"
-
-
 def _obj_key_sort(data):
-    """Replica objKeySort do saveIn.js: ordena chaves recursivamente, exclui nulls/objetos."""
     if not isinstance(data, dict) or not data:
         return data
     result = {}
@@ -78,7 +76,6 @@ def _obj_key_sort(data):
 
 
 def build_sign(timestamp, nonce, payload):
-    """Replica useVisaVerification do saveIn.js."""
     clean = {k: v for k, v in payload.items() if v is not None}
     sorted_payload = _obj_key_sort(clean)
     body = json.dumps(sorted_payload, separators=(",", ":"), ensure_ascii=False)
@@ -98,10 +95,10 @@ def build_headers(payload):
     return headers
 
 
-def fetch_tracking():
+def fetch_tracking(waybill, cpf):
     payload = {
-        "cpf": env("CPF", required=True),
-        "waybillNo": env("WAYBILL_NO", required=True),
+        "cpf": cpf,
+        "waybillNo": waybill,
         "langType": "PT",
     }
     headers = build_headers(payload)
@@ -121,7 +118,6 @@ def extract_events(data):
         return events
 
     for d in details:
-        # cada detail pode ser o evento direto OU conter uma sub-lista pathInfo/traces
         sub = d.get("pathInfo") or d.get("traces")
         if sub:
             for p in sub:
@@ -176,44 +172,52 @@ def send_whatsapp(message):
     r.raise_for_status()
 
 
-def main():
-    state_path = env("STATE_PATH", "state/last_status.json")
-    waybill = env("WAYBILL_NO", required=True)
+def track_one(waybill, cpf, state_dir):
+    state_path = Path(state_dir) / f"{waybill}.json"
 
     try:
-        data = fetch_tracking()
+        data = fetch_tracking(waybill, cpf)
     except requests.HTTPError as e:
-        print(f"[erro] HTTP {e.response.status_code}: {e.response.text[:400]}", file=sys.stderr)
-        sys.exit(1)
+        print(f"[erro] {waybill} HTTP {e.response.status_code}: {e.response.text[:400]}", file=sys.stderr)
+        return
     except Exception as e:
-        print(f"[erro] fetch falhou: {e}", file=sys.stderr)
-        sys.exit(1)
+        print(f"[erro] {waybill} fetch falhou: {e}", file=sys.stderr)
+        return
 
     new_events = extract_events(data)
-    print(f"[ok] {len(new_events)} eventos no rastreio")
+    print(f"[ok] {waybill} {len(new_events)} eventos no rastreio")
 
     state = load_state(state_path)
     old_events = state.get("events", [])
     new_only = diff_events(old_events, new_events)
 
     if not new_only:
-        print("[ok] sem mudancas")
+        print(f"[ok] {waybill} sem mudancas")
         save_state(state_path, {"events": new_events, "raw": data})
         return
 
-    print(f"[novo] {len(new_only)} eventos novos")
-    # Monta mensagem do WhatsApp
+    print(f"[novo] {waybill} {len(new_only)} eventos novos")
     lines = [f"Rastreio J&T {waybill} atualizado:"]
-    for ev in new_only[:5]:  # no maximo 5 eventos na msg (mais recentes primeiro)
+    for ev in new_only[:5]:
         lines.append(f"- {ev.get('time','')}: {ev.get('status','')} {ev.get('desc','')}".strip())
     message = "\n".join(lines)
 
     try:
         send_whatsapp(message)
     except Exception as e:
-        print(f"[erro] envio whatsapp falhou: {e}", file=sys.stderr)
-        # ainda salvamos estado pra nao spammar nas proximas execucoes
+        print(f"[erro] {waybill} envio whatsapp falhou: {e}", file=sys.stderr)
+
     save_state(state_path, {"events": new_events, "raw": data})
+
+
+def main():
+    cpf = env("CPF", required=True)
+    state_dir = env("STATE_DIR", "state")
+    waybills_raw = env("WAYBILL_NO", required=True)
+    waybills = [w.strip() for w in waybills_raw.split(",") if w.strip()]
+
+    for waybill in waybills:
+        track_one(waybill, cpf, state_dir)
 
 
 if __name__ == "__main__":
