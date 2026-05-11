@@ -82,36 +82,32 @@ def fetch_tracking():
 
 
 def extract_events(data):
-    """
-    Achata a resposta em uma lista normalizada de eventos.
-    A J&T retorna a trilha em data.details[].pathInfo[] com 'scanType', 'acceptAddress', 'scanTime'.
-    Esse parser e tolerante: pega o que conseguir achar.
-    """
     events = []
     root = data.get("data") if isinstance(data, dict) else None
     if not root:
         return events
 
     details = root.get("details") if isinstance(root, dict) else None
-    if isinstance(details, list):
-        for d in details:
-            path = d.get("pathInfo") or d.get("traces") or []
-            for p in path:
+    if not isinstance(details, list):
+        return events
+
+    for d in details:
+        # cada detail pode ser o evento direto OU conter uma sub-lista pathInfo/traces
+        sub = d.get("pathInfo") or d.get("traces")
+        if sub:
+            for p in sub:
                 events.append({
                     "time": p.get("scanTime") or p.get("acceptTime") or p.get("time"),
-                    "status": p.get("scanType") or p.get("status") or p.get("acceptStatus"),
-                    "desc": p.get("acceptAddress") or p.get("desc") or p.get("remark") or "",
+                    "status": p.get("scanTypeName") or p.get("scanType") or p.get("status"),
+                    "desc": p.get("customerTracking") or p.get("acceptAddress") or p.get("desc") or "",
                 })
-
-    # fallback caso a estrutura mude
-    if not events and isinstance(root, dict):
-        path = root.get("pathInfo") or root.get("traces") or []
-        for p in path:
+        else:
             events.append({
-                "time": p.get("scanTime") or p.get("acceptTime") or p.get("time"),
-                "status": p.get("scanType") or p.get("status"),
-                "desc": p.get("acceptAddress") or p.get("desc") or "",
+                "time": d.get("scanTime") or d.get("acceptTime") or d.get("time"),
+                "status": d.get("scanTypeName") or d.get("scanType") or d.get("status"),
+                "desc": d.get("customerTracking") or d.get("acceptAddress") or d.get("desc") or "",
             })
+
     return events
 
 
