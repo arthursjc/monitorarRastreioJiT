@@ -12,17 +12,14 @@ Variaveis de ambiente esperadas:
 
 Opcionais:
   STATE_PATH         Caminho do arquivo de estado. Default: state/last_status.json
-  JT_SIGN            Header sign (deixe vazio para tentar sem)
-  JT_KEY             Header key
-  JT_TIMESTAMP       Header timestamp em ms
-  JT_NONCE           Header nonce
 """
 
+import hashlib
 import json
 import os
+import random
 import sys
 import time
-import random
 import urllib.parse
 from pathlib import Path
 
@@ -60,12 +57,44 @@ def env(name, default=None, required=False):
     return value
 
 
-def build_headers():
+APP_ID = "3B29A9C5728BF3E1DB0C4D66B79748B7"
+JT_KEY = "94bbcac67ab47c736d530efe3e1dc358"
+
+
+def _obj_key_sort(data):
+    """Replica objKeySort do saveIn.js: ordena chaves recursivamente, exclui nulls/objetos."""
+    if not isinstance(data, dict) or not data:
+        return data
+    result = {}
+    for k in sorted(data.keys()):
+        v = data[k]
+        if isinstance(v, list):
+            result[k] = [_obj_key_sort(i) if isinstance(i, dict) else i for i in v]
+        elif isinstance(v, dict):
+            result[k] = _obj_key_sort(v)
+        elif v is not None:
+            result[k] = v
+    return result
+
+
+def build_sign(timestamp, nonce, payload):
+    """Replica useVisaVerification do saveIn.js."""
+    clean = {k: v for k, v in payload.items() if v is not None}
+    sorted_payload = _obj_key_sort(clean)
+    body = json.dumps(sorted_payload, separators=(",", ":"), ensure_ascii=False)
+    raw = f"{APP_ID}{timestamp}{nonce}{body}{JT_KEY}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest().upper()
+
+
+def build_headers(payload):
+    timestamp = str(int(time.time() * 1000))
+    nonce = f"0.{random.randint(10**14, 10**15 - 1)}"
+    sign = build_sign(timestamp, nonce, payload)
     headers = dict(DEFAULT_HEADERS)
-    headers["key"] = env("JT_KEY", "94bbcac67ab47c736d530efe3e1dc358")
-    headers["sign"] = env("JT_SIGN", "702B83736837D0CA9C61DED3D5D49B5B")
-    headers["timestamp"] = env("JT_TIMESTAMP", str(int(time.time() * 1000)))
-    headers["nonce"] = env("JT_NONCE", f"0.{random.randint(10**14, 10**15 - 1)}")
+    headers["key"] = JT_KEY
+    headers["timestamp"] = timestamp
+    headers["nonce"] = nonce
+    headers["sign"] = sign
     return headers
 
 
@@ -75,7 +104,7 @@ def fetch_tracking():
         "waybillNo": env("WAYBILL_NO", required=True),
         "langType": "PT",
     }
-    headers = build_headers()
+    headers = build_headers(payload)
     r = requests.post(JT_URL, headers=headers, json=payload, timeout=20)
     r.raise_for_status()
     return r.json()
