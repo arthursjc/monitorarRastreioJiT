@@ -1,0 +1,21 @@
+name = "jt-tracker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+WAYBILL_NO = "888030695848780"
+
+[[kv_namespaces]]
+binding = "JT_STATE"
+id = "fcd9ff8e8e3e4d30b19e375ca8402623"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
