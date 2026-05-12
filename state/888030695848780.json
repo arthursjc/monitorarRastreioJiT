@@ -216,7 +216,7 @@
         }
       ]
     },
-    "fail": false,
-    "succ": true
+    "succ": true,
+    "fail": false
   }
 }
