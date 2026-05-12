@@ -1,6 +1,11 @@
 {
   "events": [
     {
+      "time": "2026-05-12 08:07:50",
+      "status": "出仓扫描",
+      "desc": "O entregador [São José dos Campos] [SJC-SP], A****L está enviando a encomenda. Se você tiver algum problema ou reclamação, ligue para o número da filial: 08000550050"
+    },
+    {
       "time": "2026-05-09 07:02:54",
       "status": "到件扫描",
       "desc": "[São José dos Campos] Chegada da encomenda expressa [SJC-SP]"
@@ -52,6 +57,24 @@
     "data": {
       "keyword": "888030695848780",
       "details": [
+        {
+          "scanTime": "2026-05-12 08:07:50",
+          "scanTypeName": "出仓扫描",
+          "customerTracking": "O entregador [São José dos Campos] [SJC-SP], A****L está enviando a encomenda. Se você tiver algum problema ou reclamação, ligue para o número da filial: 08000550050",
+          "status": "Em Rota de Entrega",
+          "sigPicUrl": null,
+          "electronicSignaturePicUrl": null,
+          "picFlag": false,
+          "signList": null,
+          "code": 94,
+          "remark1": null,
+          "remark2": null,
+          "remark4": null,
+          "isRefund": null,
+          "deliveryName": "ALAN RODRIGO PIMENTEL",
+          "staffCode": "40463766865",
+          "scanNetworkCode": "311422"
+        },
         {
           "scanTime": "2026-05-09 07:02:54",
           "scanTypeName": "到件扫描",
@@ -216,7 +239,7 @@
         }
       ]
     },
-    "fail": false,
-    "succ": true
+    "succ": true,
+    "fail": false
   }
 }
