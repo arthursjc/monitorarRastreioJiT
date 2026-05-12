@@ -1,0 +1,20 @@
+name: keepalive
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"  # toda segunda-feira ao meio-dia UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git config user.name "jt-tracker-bot"
+          git config user.email "jt-tracker-bot@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive [skip ci]"
+          git push
