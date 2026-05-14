@@ -61,11 +61,11 @@ EMOJI_MAP = [
 ]
 
 HUB_MAP = {
-    "SN RAO": "Ribeirao Preto", "RAO": "Ribeirao Preto",
+    "SN RAO": "Ribeirão Preto", "RAO": "Ribeirão Preto",
     "ARA-SP": "Araraquara",     "ARA": "Araraquara",
-    "SJC-SP": "Sao Jose dos Campos", "SJC": "Sao Jose dos Campos",
+    "SJC-SP": "São José dos Campos", "SJC": "São José dos Campos",
     "SP BRE": "Barueri",        "BRE": "Barueri",
-    "HQ":     "Sao Paulo",
+    "HQ":     "São Paulo",
 }
 
 
