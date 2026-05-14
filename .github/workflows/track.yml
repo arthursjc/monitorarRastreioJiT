@@ -29,8 +29,8 @@ jobs:
 
       - name: Run tracker
         env:
-          WAYBILL_NO: "888030708823905,888030674620597"
-          WAYBILL_LABELS: "888030708823905=ZPHC Reta 120mg,888030674620597=Reta Antiga"
+          WAYBILL_NO: ${{ vars.WAYBILL_NO }}
+          WAYBILL_LABELS: ${{ vars.WAYBILL_LABELS }}
           CALLMEBOT_PHONE: "5512988416345"
           CPF: ${{ secrets.CPF }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
