@@ -249,12 +249,11 @@ def build_error_message(waybill, label):
 
 def send_whatsapp(message):
     phone = env("CALLMEBOT_PHONE", required=True).strip().lstrip("+")
-    apikey = "8084407"
+    apikey = env("CALLMEBOT_APIKEY", required=True).strip()
     text_encoded = urllib.parse.quote(message)
     url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={text_encoded}&apikey={apikey}"
-    print(f"[callmebot] url={url[:120]}")
     r = requests.get(url, timeout=20)
-    print(f"[callmebot] status={r.status_code} body={r.text[:300]}")
+    print(f"[callmebot] status={r.status_code} body={r.text[:200]}")
 
 
 # ── tracker principal ─────────────────────────────────────────────────────────
