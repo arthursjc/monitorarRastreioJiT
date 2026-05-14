@@ -248,13 +248,10 @@ def build_error_message(waybill, label):
 # ── WhatsApp ──────────────────────────────────────────────────────────────────
 
 def send_whatsapp(message):
-    phone = env("CALLMEBOT_PHONE", required=True)
-    apikey = env("CALLMEBOT_APIKEY", required=True)
-    # Garante + no inicio
-    if not phone.startswith("+"):
-        phone = "+" + phone
-    params = {"phone": phone, "text": message, "apikey": apikey}
-    url = "https://api.callmebot.com/whatsapp.php?" + urllib.parse.urlencode(params)
+    phone = env("CALLMEBOT_PHONE", required=True).strip().lstrip("+")
+    apikey = env("CALLMEBOT_APIKEY", required=True).strip()
+    text_encoded = urllib.parse.quote(message)
+    url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={text_encoded}&apikey={apikey}"
     r = requests.get(url, timeout=20)
     print(f"[callmebot] status={r.status_code} body={r.text[:200]}")
 
