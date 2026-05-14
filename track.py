@@ -114,12 +114,18 @@ def clean_text(status, desc):
     text = f"{status or ''} {desc or ''}".strip()
     # Substitui delimitadores CJK por espaco
     text = text.replace("【", " ").replace("】", " ")
-    # Siglas de hub entre colchetes: so maiusculas/digitos/traco → remove completamente
-    # Ex: [SN RAO], [ARA-SP], [SP BRE], [HQ], [ARA]
+    # Substitui siglas conhecidas pelo nome da cidade, mas so se a cidade ainda nao aparece no texto
+    import unicodedata
+    def _norm(s):
+        return unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode().lower()
+    text_norm = _norm(text)
+    for sigla, cidade in HUB_MAP.items():
+        replacement = "" if _norm(cidade) in text_norm else cidade
+        text = text.replace(f"[{sigla}]", replacement)
+    # Remove siglas desconhecidas entre colchetes (so maiusculas/digitos/traco)
     text = re.sub(r"\[[A-Z0-9]{1,4}[\s\-][A-Z0-9]{1,4}\]", "", text)
     text = re.sub(r"\[[A-Z0-9]{2,5}\]", "", text)
     # Colchetes com texto legivel (cidade) → remove os colchetes, mantém o texto
-    # Ex: [Ribeirão Preto] → Ribeirão Preto
     text = re.sub(r"\[([^\]]+)\]", r"\1", text)
     # Remove anonimizacao: A****L
     text = re.sub(r"\b\w\*{2,}\w\b", "", text)
