@@ -29,10 +29,10 @@ jobs:
 
       - name: Run tracker
         env:
-          WAYBILL_NO: ${{ secrets.WAYBILL_NO }}
-          WAYBILL_LABELS: ${{ secrets.WAYBILL_LABELS }}
+          WAYBILL_NO: "888030708823905,888030674620597"
+          WAYBILL_LABELS: "888030708823905=ZPHC Reta 120mg,888030674620597=Reta Antiga"
+          CALLMEBOT_PHONE: "5512988416345"
           CPF: ${{ secrets.CPF }}
-          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: python track.py
 
