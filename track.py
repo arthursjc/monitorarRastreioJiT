@@ -121,10 +121,8 @@ def clean_text(status, desc):
     for sigla, cidade in HUB_MAP.items():
         text = text.replace(f"[{sigla}]", cidade)
         text = text.replace(sigla, "")
-    # Remove prefixo de cidade no inicio: "[Cidade] texto" -> "texto"
-    text = re.sub(r"^\[[^\]]+\]\s*", "", text)
-    # Remove colchetes vazios
-    text = re.sub(r"\[\s*\]", "", text)
+    # Remove qualquer conteudo entre colchetes que sobrou
+    text = re.sub(r"\[[^\]]*\]", "", text)
     # Remove anonimizacao: A****L
     text = re.sub(r"\b\w\*{2,}\w\b", "", text)
     # Remove telefone de reclamacao
@@ -250,9 +248,11 @@ def build_error_message(waybill, label):
 def send_whatsapp(message):
     phone = env("CALLMEBOT_PHONE", required=True).strip().lstrip("+")
     apikey = env("CALLMEBOT_APIKEY", required=True).strip()
-    text_encoded = urllib.parse.quote(message)
+    # Monta URL manualmente para evitar double-encoding do requests
+    text_encoded = urllib.parse.quote(message, safe="")
     url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={text_encoded}&apikey={apikey}"
-    r = requests.get(url, timeout=20)
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
+    r = requests.get(url, headers=headers, timeout=20)
     print(f"[callmebot] status={r.status_code} body={r.text[:200]}")
 
 
