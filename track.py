@@ -112,22 +112,24 @@ def format_datetime(raw):
 def clean_text(status, desc):
     import re
     text = f"{status or ''} {desc or ''}".strip()
-    # Substitui delimitadores CJK
-    text = text.replace("【", "(").replace("】", ")")
-    # Remove siglas de hub entre colchetes
-    text = re.sub(r"\[[A-Z]{2,3}[\s\-][A-Z]{2,3}\]", "", text)
-    text = re.sub(r"\[[A-Z]{2,4}\]", "", text)
-    # Resolve siglas soltas
-    for sigla, cidade in HUB_MAP.items():
-        text = text.replace(f"[{sigla}]", cidade)
-        text = text.replace(sigla, "")
-    # Remove qualquer conteudo entre colchetes que sobrou
-    text = re.sub(r"\[[^\]]*\]", "", text)
+    # Substitui delimitadores CJK por espaco
+    text = text.replace("【", " ").replace("】", " ")
+    # Siglas de hub entre colchetes: so maiusculas/digitos/traco → remove completamente
+    # Ex: [SN RAO], [ARA-SP], [SP BRE], [HQ], [ARA]
+    text = re.sub(r"\[[A-Z0-9]{1,4}[\s\-][A-Z0-9]{1,4}\]", "", text)
+    text = re.sub(r"\[[A-Z0-9]{2,5}\]", "", text)
+    # Colchetes com texto legivel (cidade) → remove os colchetes, mantém o texto
+    # Ex: [Ribeirão Preto] → Ribeirão Preto
+    text = re.sub(r"\[([^\]]+)\]", r"\1", text)
     # Remove anonimizacao: A****L
     text = re.sub(r"\b\w\*{2,}\w\b", "", text)
-    # Remove telefone de reclamacao
-    text = re.sub(r",?\s*se voce tiver[^.]*\.", "", text, flags=re.IGNORECASE)
-    text = re.sub(r",?\s*ligue para[^.]*\.", "", text, flags=re.IGNORECASE)
+    # Remove aviso de reclamacao que aparece apos ponto final
+    text = re.sub(r"\.?\s*[Ss]e voc\S+ tiver.*", "", text)
+    text = re.sub(r",?\s*ligue para.*", "", text, flags=re.IGNORECASE)
+    # Remove palavras/pontuacao sobrando no final (repeticao para multiplos casos)
+    for _ in range(3):
+        text = re.sub(r"[,\s]+(para|de|do|da|operador|enviada|e)\s*$", "", text, flags=re.IGNORECASE)
+        text = text.rstrip(" ,.")
     # Limpa espacos
     text = re.sub(r"\s{2,}", " ", text).strip()
     if len(text) > 150:
