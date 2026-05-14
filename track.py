@@ -224,7 +224,7 @@ def save_state(path, state):
 def build_message(waybill, label, new_events):
     name = label or waybill
     lines = [f"📦 J&T - {name}"]
-    for ev in new_events[:5]:
+    for ev in new_events[:3]:
         text = clean_text(ev.get("status"), ev.get("desc"))
         emoji = pick_emoji(text)
         dt = format_datetime(ev.get("time"))
@@ -254,6 +254,13 @@ def send_whatsapp(message):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
     r = requests.get(url, headers=headers, timeout=20)
     print(f"[callmebot] status={r.status_code} body={r.text[:200]}")
+
+    if r.status_code == 403:
+        # Fallback: mensagem simples sem emojis para diagnostico
+        simple = urllib.parse.quote(f"J&T tracker: {message[:80]}", safe="")
+        url2 = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={simple}&apikey={apikey}"
+        r2 = requests.get(url2, headers=headers, timeout=20)
+        print(f"[callmebot-fallback] status={r2.status_code} body={r2.text[:200]}")
 
 
 # ── tracker principal ─────────────────────────────────────────────────────────
