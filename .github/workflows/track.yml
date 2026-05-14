@@ -2,11 +2,11 @@ name: jt-tracker
 
 on:
   schedule:
-    - cron: "*/5 * * * *"    # a cada 5 min
-  workflow_dispatch:         # permite rodar manual pelo botao "Run workflow"
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write            # precisa pra commitar state.json de volta
+  contents: write
 
 concurrency:
   group: jt-tracker
@@ -30,6 +30,7 @@ jobs:
       - name: Run tracker
         env:
           WAYBILL_NO: ${{ secrets.WAYBILL_NO }}
+          WAYBILL_LABELS: ${{ secrets.WAYBILL_LABELS }}
           CPF: ${{ secrets.CPF }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}

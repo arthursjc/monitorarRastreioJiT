@@ -1,4 +1,4 @@
-name = "jt-tracker"
+name = "jt-monitor"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
@@ -6,7 +6,7 @@ compatibility_date = "2024-01-01"
 crons = ["*/5 * * * *"]
 
 [vars]
-WAYBILL_NO = "888030695848780"
+WAYBILL_NO = "888030708823905,888030674620597"
 
 [[kv_namespaces]]
 binding = "JT_STATE"

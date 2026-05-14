@@ -137,11 +137,22 @@ function diffEvents(oldEvents, newEvents) {
   return newEvents.filter(e => !oldKeys.has(eventKey(e)));
 }
 
-// ── CallMeBot ─────────────────────────────────────────────────────────────────
-async function sendWhatsapp(message, phone, apikey) {
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apikey}`;
-  const res = await fetch(url);
-  console.log(`[callmebot] status=${res.status}`);
+// ── GREEN-API ─────────────────────────────────────────────────────────────────
+async function sendWhatsapp(message, phone, token) {
+  // token format: "idInstance:apiTokenInstance"
+  const [idInstance, apiToken] = token.split(":");
+  const phoneList = phone.split(",").map(p => p.trim()).filter(Boolean);
+  for (const rawPhone of phoneList) {
+    const chatId = rawPhone.replace(/^\+/, "").replace(/\D/g, "") + "@c.us";
+    const url = `https://api.green-api.com/waInstance${idInstance}/sendMessage/${apiToken}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId, message }),
+    });
+    const body = await res.text();
+    console.log(`[greenapi] phone=${rawPhone} status=${res.status} body=${body.slice(0, 200)}`);
+  }
 }
 
 // ── Track de uma encomenda ────────────────────────────────────────────────────
@@ -177,7 +188,7 @@ export default {
   async scheduled(event, env, ctx) {
     const waybills = env.WAYBILL_NO.split(",").map(w => w.trim()).filter(Boolean);
     for (const waybill of waybills) {
-      await trackOne(waybill, env.CPF, env.CALLMEBOT_PHONE, env.CALLMEBOT_APIKEY, env.JT_STATE);
+      await trackOne(waybill, env.CPF, env.WHAPI_PHONE, env.WHAPI_TOKEN, env.JT_STATE);
     }
   },
 
@@ -186,7 +197,7 @@ export default {
     if (new URL(request.url).pathname === "/run") {
       const waybills = env.WAYBILL_NO.split(",").map(w => w.trim()).filter(Boolean);
       for (const waybill of waybills) {
-        await trackOne(waybill, env.CPF, env.CALLMEBOT_PHONE, env.CALLMEBOT_APIKEY, env.JT_STATE);
+        await trackOne(waybill, env.CPF, env.WHAPI_PHONE, env.WHAPI_TOKEN, env.JT_STATE);
       }
       return new Response("ok", { status: 200 });
     }
