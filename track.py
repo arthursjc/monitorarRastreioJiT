@@ -204,6 +204,15 @@ def extract_jadlog_events(html):
     return events
 
 
+def is_jadlog_delivered(ev):
+    import unicodedata
+    def norm(s):
+        return unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode().lower()
+    text = norm(f"{ev.get('status','')} {ev.get('desc','')}")
+    # Entrega final ao destinatario — exclui eventos de ponto de coleta/apoio
+    return "destinatario" in text
+
+
 def format_datetime_jadlog(raw):
     # "19/05/2026 - 16:39" → "19/05 16:39"
     if not raw:
@@ -279,7 +288,7 @@ def track_one_jadlog(cte, state_dir, label):
         "events": new_events,
         "fail_count": 0,
         "first_seen_at": state.get("first_seen_at") or datetime.utcnow().isoformat(),
-        "last_status": new_events[0].get("status") if new_events else state.get("last_status"),
+        "last_status": new_events[-1].get("status") if new_events else state.get("last_status"),
         "delivered": state.get("delivered", False),
         "delivered_at": state.get("delivered_at"),
     })
@@ -291,7 +300,7 @@ def track_one_jadlog(cte, state_dir, label):
 
     print(f"[novo] jadlog {cte} {len(new_only)} eventos novos")
 
-    delivery_ev = next((e for e in new_only if is_delivered(e)), None)
+    delivery_ev = next((e for e in new_only if is_jadlog_delivered(e)), None)
     if delivery_ev:
         state["delivered"] = True
         state["delivered_at"] = delivery_ev.get("time") or datetime.utcnow().isoformat()

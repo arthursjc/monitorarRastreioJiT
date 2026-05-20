@@ -15,7 +15,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-05-20T17:54:13.416009",
-  "last_status": "Seu produto foi entregue em um ponto Jadlog.",
-  "delivered": true,
-  "delivered_at": "19/05/2026 - 16:39"
+  "last_status": "Seu produto foi coletado no Ponto de apoio e já está com a Jadlog.",
+  "delivered": false,
+  "delivered_at": null
 }
