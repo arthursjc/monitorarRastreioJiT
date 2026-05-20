@@ -34,6 +34,8 @@ jobs:
           CALLMEBOT_PHONE: "5512988416345"
           CPF: ${{ secrets.CPF }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          JADLOG_CTE: ${{ vars.JADLOG_CTE }}
+          JADLOG_LABELS: ${{ vars.JADLOG_LABELS }}
         run: python track.py
 
       - name: Commit state se mudou

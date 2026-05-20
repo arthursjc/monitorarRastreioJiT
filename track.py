@@ -28,6 +28,18 @@ JT_KEY  = "94bbcac67ab47c736d530efe3e1dc358"
 TRACKING_URL = "https://www.jtexpress.com.br/trajectquery?waybillNo="
 MAX_FAIL = 3
 
+JADLOG_URL = "https://www.jadlog.com.br/jadlog/rastreio"
+JADLOG_TRACKING_URL = "https://www.jadlog.com.br/jadlog/rastreio?cte="
+JADLOG_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0"
+    ),
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Referer": "https://www.jadlog.com.br/jadlog/captcha",
+    "Origin": "https://www.jadlog.com.br",
+}
+
 DEFAULT_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
@@ -171,6 +183,133 @@ def build_sign(timestamp, nonce, payload):
     raw = f"{APP_ID}{timestamp}{nonce}{body}{JT_KEY}"
     return hashlib.md5(raw.encode("utf-8")).hexdigest().upper()
 
+
+# ── jadlog fetch / parse ──────────────────────────────────────────────────────
+
+def fetch_jadlog(cte):
+    r = requests.post(JADLOG_URL, headers=JADLOG_HEADERS, data={"cte": cte}, timeout=20)
+    r.raise_for_status()
+    return r.text
+
+
+def extract_jadlog_events(html):
+    import re as _re
+    events = []
+    pattern = r'class="txt-status">(.*?)<br[^>]*>\s*<small class="txt-data">(.*?)</small>'
+    for status_raw, date_raw in _re.findall(pattern, html, _re.DOTALL):
+        status = _re.sub(r"<[^>]+>", "", status_raw).strip()
+        date_str = date_raw.strip()
+        if status:
+            events.append({"time": date_str, "status": status, "desc": "", "deliveryName": ""})
+    return events
+
+
+def format_datetime_jadlog(raw):
+    # "19/05/2026 - 16:39" → "19/05 16:39"
+    if not raw:
+        return ""
+    try:
+        date_part, time_part = raw.strip().split(" - ", 1)
+        day, month, _ = date_part.split("/")
+        return f"{day}/{month} {time_part.strip()}"
+    except Exception:
+        return str(raw)
+
+
+def build_jadlog_message(cte, label, new_events):
+    name = label or cte
+    lines = [f"📦 Jadlog - {name}"]
+    for ev in new_events[:3]:
+        status = ev.get("status", "")
+        emoji = pick_emoji(status)
+        dt = format_datetime_jadlog(ev.get("time"))
+        lines.append(f"\n{emoji} {dt}\n{status}")
+    lines.append(f"\n🔗 {JADLOG_TRACKING_URL}{cte}")
+    return "\n".join(lines)
+
+
+def build_jadlog_delivered_message(cte, label):
+    name = label or cte
+    return (
+        f"✅ Jadlog - {name}\n\n"
+        f"Sua encomenda foi entregue! 🎉\n\n"
+        f"🔗 {JADLOG_TRACKING_URL}{cte}"
+    )
+
+
+def build_jadlog_error_message(cte, label):
+    name = label or cte
+    return (
+        f"⚠️ Jadlog - {name}\n\n"
+        f"Falha ao consultar rastreio por {MAX_FAIL} vezes seguidas. Verifique manualmente.\n\n"
+        f"🔗 {JADLOG_TRACKING_URL}{cte}"
+    )
+
+
+def track_one_jadlog(cte, state_dir, label):
+    state_path = Path(state_dir) / f"jadlog_{cte}.json"
+    state = load_state(state_path)
+
+    if state.get("delivered"):
+        print(f"[skip] jadlog {cte} ja entregue")
+        return
+
+    try:
+        html = fetch_jadlog(cte)
+    except Exception as e:
+        print(f"[erro] jadlog {cte} fetch falhou: {e}", file=sys.stderr)
+        fail_count = state.get("fail_count", 0) + 1
+        state["fail_count"] = fail_count
+        save_state(state_path, state)
+        if fail_count >= MAX_FAIL:
+            print(f"[alerta] jadlog {cte} {fail_count} falhas, notificando")
+            try:
+                send_whatsapp(build_jadlog_error_message(cte, label))
+            except Exception:
+                pass
+        return
+
+    new_events = extract_jadlog_events(html)
+    print(f"[ok] jadlog {cte} {len(new_events)} eventos")
+
+    old_events = state.get("events", [])
+    new_only = diff_events(old_events, new_events)
+
+    state.update({
+        "events": new_events,
+        "fail_count": 0,
+        "first_seen_at": state.get("first_seen_at") or datetime.utcnow().isoformat(),
+        "last_status": new_events[0].get("status") if new_events else state.get("last_status"),
+        "delivered": state.get("delivered", False),
+        "delivered_at": state.get("delivered_at"),
+    })
+
+    if not new_only:
+        print(f"[ok] jadlog {cte} sem mudancas")
+        save_state(state_path, state)
+        return
+
+    print(f"[novo] jadlog {cte} {len(new_only)} eventos novos")
+
+    delivery_ev = next((e for e in new_only if is_delivered(e)), None)
+    if delivery_ev:
+        state["delivered"] = True
+        state["delivered_at"] = delivery_ev.get("time") or datetime.utcnow().isoformat()
+        print(f"[entregue] jadlog {cte}")
+        try:
+            send_whatsapp(build_jadlog_delivered_message(cte, label))
+        except Exception as e:
+            print(f"[erro] envio whatsapp: {e}", file=sys.stderr)
+    else:
+        try:
+            send_whatsapp(build_jadlog_message(cte, label, new_only))
+        except Exception as e:
+            print(f"[erro] envio whatsapp: {e}", file=sys.stderr)
+
+    save_state(state_path, state)
+
+
+# ── J&T fetch ─────────────────────────────────────────────────────────────────
 
 def fetch_tracking(waybill, cpf):
     payload = {"cpf": cpf, "waybillNo": waybill, "langType": "PT"}
@@ -337,13 +476,22 @@ def track_one(waybill, cpf, state_dir, label):
 
 
 def main():
-    cpf = env("CPF", required=True)
     state_dir = env("STATE_DIR", "state")
-    waybills = [w.strip() for w in env("WAYBILL_NO", required=True).split(",") if w.strip()]
-    labels = parse_labels(env("WAYBILL_LABELS", ""))
 
-    for waybill in waybills:
-        track_one(waybill, cpf, state_dir, labels.get(waybill))
+    waybill_raw = env("WAYBILL_NO", "")
+    if waybill_raw:
+        cpf = env("CPF", required=True)
+        waybills = [w.strip() for w in waybill_raw.split(",") if w.strip()]
+        labels = parse_labels(env("WAYBILL_LABELS", ""))
+        for waybill in waybills:
+            track_one(waybill, cpf, state_dir, labels.get(waybill))
+
+    jadlog_raw = env("JADLOG_CTE", "")
+    if jadlog_raw:
+        jadlog_ctes = [c.strip() for c in jadlog_raw.split(",") if c.strip()]
+        jadlog_labels = parse_labels(env("JADLOG_LABELS", ""))
+        for cte in jadlog_ctes:
+            track_one_jadlog(cte, state_dir, jadlog_labels.get(cte))
 
 
 if __name__ == "__main__":
