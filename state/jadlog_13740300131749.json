@@ -11,11 +11,17 @@
       "status": "Seu produto foi coletado no ponto de apoio e já está com a Jadlog.",
       "desc": "",
       "deliveryName": ""
+    },
+    {
+      "time": "20/05/2026 - 15:54",
+      "status": "Seu produto está em transferência interna para Jadlog destino.",
+      "desc": "",
+      "deliveryName": ""
     }
   ],
   "fail_count": 0,
   "first_seen_at": "2026-05-20T17:54:13.416009",
-  "last_status": "Seu produto foi coletado no ponto de apoio e já está com a Jadlog.",
+  "last_status": "Seu produto está em transferência interna para Jadlog destino.",
   "delivered": false,
   "delivered_at": null
 }
