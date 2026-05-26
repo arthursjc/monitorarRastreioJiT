@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-05-26 05:37:17",
+      "status": "Em transferencia",
+      "desc": "[Cuiabá] Saída da encomenda expressa [CGB 04-MT] enviada para [MT CGB]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-05-25 11:17:45",
       "status": "Em transferencia",
       "desc": "[Cuiabá] Chegada da encomenda expressa [CGB 04-MT]",
