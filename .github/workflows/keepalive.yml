@@ -12,7 +12,7 @@ jobs:
   keepalive:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: |
           git config user.name "jt-tracker-bot"
           git config user.email "jt-tracker-bot@users.noreply.github.com"
