@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-05-27 14:49:21",
+      "status": "Coletado",
+      "desc": "[Rondonópolis] [MT CGB] Seu entregador G****A retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "GABRIELY COSTA NOGUEIRA"
+    },
+    {
       "time": "2026-05-27 11:32:54",
       "status": "Em transferencia",
       "desc": "[Rondonópolis] Chegada da encomenda expressa [MT CGB]",
@@ -21,7 +27,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-05-25T20:00:43.146443",
-  "last_status": "Em transferencia",
+  "last_status": "Coletado",
   "delivered": false,
   "delivered_at": null
 }
