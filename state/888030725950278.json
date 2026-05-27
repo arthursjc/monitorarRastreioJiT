@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-05-27 17:12:18",
+      "status": "Em transferencia",
+      "desc": "[Rondonópolis] Saída da encomenda expressa [MT CGB] enviada para [SP BRE]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-05-27 14:49:21",
       "status": "Coletado",
       "desc": "[Rondonópolis] [MT CGB] Seu entregador G****A retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
@@ -27,7 +33,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-05-25T20:00:43.146443",
-  "last_status": "Coletado",
+  "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
 }
