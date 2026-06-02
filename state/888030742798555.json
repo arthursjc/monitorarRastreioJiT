@@ -1,6 +1,24 @@
 {
   "events": [
     {
+      "time": "2026-06-02 18:41:09",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-06-02 16:40:57",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-06-02 16:40:55",
+      "status": "Em transferencia",
+      "desc": "[São Paulo] Saída da encomenda expressa [HQ] enviada para [SP BRE]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-06-02 00:56:50",
       "status": "Em transferencia",
       "desc": "[Ribeirão Preto] Saída da encomenda expressa [SN RAO] enviada para [SP BRE]",
