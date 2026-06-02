@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-06-02 00:56:50",
+      "status": "Em transferencia",
+      "desc": "[Ribeirão Preto] Saída da encomenda expressa [SN RAO] enviada para [SP BRE]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-06-01 22:33:22",
       "status": "Em transferencia",
       "desc": "[Ribeirão Preto] Chegada da encomenda expressa [SN RAO]",
