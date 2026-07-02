@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-07-02 11:56:03",
+      "status": "Em transferencia",
+      "desc": "[Guarulhos] Saída da encomenda expressa [SP GRU] enviada para [SJC-SP]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-02 03:11:51",
       "status": "Em transferencia",
       "desc": "[Guarulhos] Chegada da encomenda expressa [SP GRU]",
