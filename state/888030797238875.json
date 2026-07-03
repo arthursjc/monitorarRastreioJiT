@@ -1,8 +1,21 @@
 {
-  "events": [],
+  "events": [
+    {
+      "time": "2026-07-03 16:57:51",
+      "status": "Em transferencia",
+      "desc": "[Rio de Janeiro] Saída da encomenda expressa [PA RIO-RJ] enviada para [RJ SJM]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-03 16:57:41",
+      "status": "Coletado",
+      "desc": "[Rio de Janeiro] [PA RIO-RJ] Seu entregador N****O retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "NICOLAS DA SILVA MELO"
+    }
+  ],
   "fail_count": 0,
   "first_seen_at": "2026-07-03T14:40:50.893159",
-  "last_status": null,
+  "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
 }
