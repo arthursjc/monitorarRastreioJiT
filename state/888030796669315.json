@@ -1,8 +1,21 @@
 {
-  "events": [],
+  "events": [
+    {
+      "time": "2026-07-03 22:33:00",
+      "status": "Em transferencia",
+      "desc": "[Guarulhos] Saída da encomenda expressa [PA PEGAKI-GRU-SP] enviada para [SPE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-03 22:32:50",
+      "status": "Coletado",
+      "desc": "[Guarulhos] [PA PEGAKI-GRU-SP] Seu entregador C****a retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "Carina anunciação martins Silva"
+    }
+  ],
   "fail_count": 0,
   "first_seen_at": "2026-07-01T21:57:40.634639",
-  "last_status": null,
+  "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
 }
