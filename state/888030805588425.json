@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-07-07 17:54:35",
+      "status": "Coletado",
+      "desc": "[Araraquara] [ARA-SP] Seu entregador T****S retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "TAC CARRO EDNE APARECIDO MARTINS"
+    },
+    {
       "time": "2026-07-07 16:20:42",
       "status": "Em transferencia",
       "desc": "Sua remessa foi enviada para【YoYi! DF ARARAQUARA 004】, operador 【D****e】.",
@@ -9,7 +15,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-07T15:26:07.886684",
-  "last_status": "Em transferencia",
+  "last_status": "Coletado",
   "delivered": false,
   "delivered_at": null
 }
