@@ -1,8 +1,21 @@
 {
-  "events": [],
+  "events": [
+    {
+      "time": "2026-07-14 22:31:03",
+      "status": "Em transferencia",
+      "desc": "[Campinas] Saída da encomenda expressa [PA PEGAKI-VCP-SP] enviada para [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-14 22:30:53",
+      "status": "Coletado",
+      "desc": "[Campinas] [PA PEGAKI-VCP-SP] Seu entregador M****a retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "Marciano Magalhães Silva"
+    }
+  ],
   "fail_count": 0,
   "first_seen_at": "2026-07-13T20:38:09.094895",
-  "last_status": null,
+  "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
 }
