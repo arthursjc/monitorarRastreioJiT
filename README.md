@@ -43,6 +43,14 @@ No repo, va em **Settings → Secrets and variables → Actions → New reposito
 | `CALLMEBOT_PHONE` | seu telefone com codigo do pais sem `+`, ex `5511999999999`              |
 | `CALLMEBOT_APIKEY`| APIKey que o bot te mandou no WhatsApp                                   |
 
+Para rastrear Correios/Sedex sem contrato dos Correios, o projeto consulta a pagina publica
+`rastreamentocorreios.info/consulta/<codigo>`. Crie tambem:
+
+| Nome                  | Valor                                                                    |
+|-----------------------|--------------------------------------------------------------------------|
+| `CORREIOS_CODES`      | Codigos separados por virgula, ex `AD687043754BR`                        |
+| `CORREIOS_LABELS`     | Opcional. Apelidos, ex `AD687043754BR=Sedex Cliente X`                   |
+
 Os secrets abaixo sao **opcionais**. Se o curl original parar de funcionar (HTTP 401/403 ou body de erro), capture valores frescos no navegador (DevTools → aba Network → request `getDetailByWaybillNo` → copy headers) e cadastre aqui:
 
 | Nome           | Quando usar                                            |
@@ -69,6 +77,13 @@ Depois, clique em **jt-tracker → Run workflow** pra disparar uma rodada manual
 ## Trocar pra outra encomenda
 
 Edita o secret `WAYBILL_NO` (e `CPF` se for outro destinatario). Apaga o conteudo de `state/last_status.json` deixando so `{"events": []}` se quiser comecar do zero.
+
+Para Sedex/Correios, edite `CORREIOS_CODES`. Exemplo:
+
+```
+CORREIOS_CODES=AD687043754BR
+CORREIOS_LABELS=AD687043754BR=Sedex Exemplo
+```
 
 ## Custo
 

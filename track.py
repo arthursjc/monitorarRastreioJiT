@@ -5,6 +5,8 @@ Variaveis de ambiente:
   WAYBILL_NO        Numeros separados por virgula
   WAYBILL_LABELS    Apelidos: "888030708823905=Tenis Nike,123=Livro"
   CPF               CPF do destinatario
+  CORREIOS_CODES    Codigos Correios/Sedex separados por virgula
+  CORREIOS_LABELS   Apelidos: "AD687043754BR=Pedido Sedex"
   CALLMEBOT_PHONE   Ex: 5512988416345
   CALLMEBOT_APIKEY  API key CallMeBot
   STATE_DIR         Pasta de estado (default: state)
@@ -39,6 +41,23 @@ JADLOG_HEADERS = {
     "Referer": "https://www.jadlog.com.br/jadlog/captcha",
     "Origin": "https://www.jadlog.com.br",
 }
+
+CORREIOS_PUBLIC_URL = "https://rastreamentocorreios.info/consulta/"
+CORREIOS_TRACKING_URL = "https://rastreamentocorreios.info/consulta/"
+CORREIOS_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+    "Cache-Control": "max-age=0",
+    "Referer": "https://rastreamentocorreios.info/sedex",
+    "Upgrade-Insecure-Requests": "1",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0"
+    ),
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "Windows",
+}
+
 
 DEFAULT_HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -253,6 +272,160 @@ def build_jadlog_error_message(cte, label):
         f"Falha ao consultar rastreio por {MAX_FAIL} vezes seguidas. Verifique manualmente.\n\n"
         f"🔗 {JADLOG_TRACKING_URL}{cte}"
     )
+
+
+# ── correios / sedex fetch / parse ────────────────────────────────────────────
+
+def fetch_correios(code):
+    url = f"{env('CORREIOS_PUBLIC_URL', CORREIOS_PUBLIC_URL).rstrip('/')}/{code}"
+    r = requests.get(url, headers=CORREIOS_HEADERS, timeout=35)
+    if r.status_code == 429:
+        raise RuntimeError("site publico dos Correios limitou as consultas (HTTP 429)")
+    r.raise_for_status()
+    if "Just a moment" in r.text or "challenge-platform" in r.text or "cf-challenge" in r.text:
+        raise RuntimeError("Cloudflare bloqueou a consulta publica dos Correios")
+    return r.text
+
+
+def _strip_html(raw):
+    import html
+    import re
+    text = re.sub(r"<br\s*/?>", " ", raw or "", flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    return re.sub(r"\s{2,}", " ", text).strip()
+
+
+def _parse_correios_datetime(raw):
+    import re
+    text = _strip_html(raw)
+    m = re.search(r"(\d{2})/(\d{2})/(\d{2})\s+(\d{2}:\d{2})", text)
+    if not m:
+        return text
+    day, month, year, hour = m.groups()
+    return f"20{year}-{month}-{day} {hour}"
+
+
+def extract_correios_events(html):
+    import re
+    events = []
+
+    for chunk in html.split('class="card track-card"')[1:]:
+        date_match = re.search(r"<small>(.*?)</small>", chunk, re.DOTALL | re.IGNORECASE)
+        status_match = re.search(r'<p class="mb-0">(.*?)</p>', chunk, re.DOTALL | re.IGNORECASE)
+        location_match = re.search(
+            r'<p class="smaller-text text-mediumgray mb-0">(.*?)</p>',
+            chunk,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if not date_match or not status_match:
+            continue
+
+        status = _strip_html(status_match.group(1))
+        location = _strip_html(location_match.group(1)) if location_match else ""
+        if location.lower().startswith("ha ") or location.lower().startswith("há "):
+            location = ""
+        desc = location
+        events.append({
+            "time": _parse_correios_datetime(date_match.group(1)),
+            "status": status,
+            "desc": desc,
+            "deliveryName": "",
+        })
+    return events
+
+
+def build_correios_message(code, label, new_events):
+    name = label or code
+    lines = [f"📦 Correios/Sedex - {name}"]
+    for ev in new_events[:3]:
+        text = clean_text(ev.get("status"), ev.get("desc"))
+        emoji = pick_emoji(text)
+        dt = format_datetime(ev.get("time"))
+        lines.append(f"\n{emoji} {dt}\n{text}")
+    lines.append(f"\n🔗 {CORREIOS_TRACKING_URL}{code}")
+    return "\n".join(lines)
+
+
+def build_correios_delivered_message(code, label):
+    name = label or code
+    return (
+        f"✅ Correios/Sedex - {name}\n\n"
+        f"Sua encomenda foi entregue! 🎉\n\n"
+        f"🔗 {CORREIOS_TRACKING_URL}{code}"
+    )
+
+
+def build_correios_error_message(code, label):
+    name = label or code
+    return (
+        f"⚠️ Correios/Sedex - {name}\n\n"
+        f"Falha ao consultar rastreio por {MAX_FAIL} vezes seguidas. Verifique manualmente.\n\n"
+        f"🔗 {CORREIOS_TRACKING_URL}{code}"
+    )
+
+
+def track_one_correios(code, state_dir, label):
+    state_path = Path(state_dir) / f"correios_{code}.json"
+    state = load_state(state_path)
+
+    if state.get("delivered"):
+        print(f"[skip] correios {code} ja entregue")
+        return
+
+    try:
+        data = fetch_correios(code)
+    except Exception as e:
+        print(f"[erro] correios {code} fetch falhou: {e}", file=sys.stderr)
+        fail_count = state.get("fail_count", 0) + 1
+        state["fail_count"] = fail_count
+        save_state(state_path, state)
+        if fail_count >= MAX_FAIL:
+            print(f"[alerta] correios {code} {fail_count} falhas, notificando")
+            try:
+                send_whatsapp(build_correios_error_message(code, label))
+            except Exception:
+                pass
+        return
+
+    new_events = extract_correios_events(data)
+    print(f"[ok] correios {code} {len(new_events)} eventos")
+
+    old_events = state.get("events", [])
+    new_only = diff_events(old_events, new_events)
+
+    state.update({
+        "events": new_events,
+        "fail_count": 0,
+        "first_seen_at": state.get("first_seen_at") or datetime.utcnow().isoformat(),
+        "last_status": new_events[0].get("status") if new_events else state.get("last_status"),
+        "delivered": state.get("delivered", False),
+        "delivered_at": state.get("delivered_at"),
+    })
+
+    if not new_only:
+        print(f"[ok] correios {code} sem mudancas")
+        save_state(state_path, state)
+        return
+
+    print(f"[novo] correios {code} {len(new_only)} eventos novos")
+
+    delivery_ev = next((e for e in new_only if is_delivered(e)), None)
+    if delivery_ev:
+        state["delivered"] = True
+        state["delivered_at"] = delivery_ev.get("time") or datetime.utcnow().isoformat()
+        print(f"[entregue] correios {code}")
+        try:
+            send_whatsapp(build_correios_delivered_message(code, label))
+        except Exception as e:
+            print(f"[erro] envio whatsapp: {e}", file=sys.stderr)
+    else:
+        try:
+            send_whatsapp(build_correios_message(code, label, new_only))
+        except Exception as e:
+            print(f"[erro] envio whatsapp: {e}", file=sys.stderr)
+
+    save_state(state_path, state)
 
 
 def track_one_jadlog(cte, state_dir, label):
@@ -501,6 +674,13 @@ def main():
         jadlog_labels = parse_labels(env("JADLOG_LABELS", ""))
         for cte in jadlog_ctes:
             track_one_jadlog(cte, state_dir, jadlog_labels.get(cte))
+
+    correios_raw = env("CORREIOS_CODES", "")
+    if correios_raw:
+        correios_codes = [c.strip().upper() for c in correios_raw.split(",") if c.strip()]
+        correios_labels = parse_labels(env("CORREIOS_LABELS", ""))
+        for code in correios_codes:
+            track_one_correios(code, state_dir, correios_labels.get(code))
 
 
 if __name__ == "__main__":

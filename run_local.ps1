@@ -7,6 +7,8 @@ $env:CALLMEBOT_APIKEY = "8084407"
 $env:CPF             = "41795685867"
 $env:JADLOG_CTE      = "13740300131749"
 $env:JADLOG_LABELS   = "13740300131749=Meu Pedido Jadlog"
+$env:CORREIOS_CODES  = "AD687043754BR"
+$env:CORREIOS_LABELS = "AD687043754BR=Sedex Exemplo"
 
 # Apaga state para forcar reenvio (comente para simular execucao normal)
 Remove-Item state\*.json -Force -ErrorAction SilentlyContinue

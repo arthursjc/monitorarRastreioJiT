@@ -36,6 +36,8 @@ jobs:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
           JADLOG_CTE: ${{ vars.JADLOG_CTE }}
           JADLOG_LABELS: ${{ vars.JADLOG_LABELS }}
+          CORREIOS_CODES: ${{ vars.CORREIOS_CODES }}
+          CORREIOS_LABELS: ${{ vars.CORREIOS_LABELS }}
         run: python track.py
 
       - name: Commit state se mudou
