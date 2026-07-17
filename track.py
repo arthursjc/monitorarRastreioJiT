@@ -7,7 +7,7 @@ Variaveis de ambiente:
   CPF               CPF do destinatario
   CORREIOS_CODES    Codigos Correios/Sedex separados por virgula
   CORREIOS_LABELS   Apelidos: "AD687043754BR=Pedido Sedex"
-  PACOTEVICIO_API_KEY  Chave RapidAPI para rastreio Correios via PacoteVicio
+  PACOTEVICIO_API_KEY  Chave RapidAPI para rastreio Correios/J&T via PacoteVicio
   CALLMEBOT_PHONE   Ex: 5512988416345
   CALLMEBOT_APIKEY  API key CallMeBot
   STATE_DIR         Pasta de estado (default: state)
@@ -46,6 +46,9 @@ JADLOG_HEADERS = {
 CORREIOS_TRACKING_URL = "https://rastreamento.correios.com.br/app/index.php?objeto="
 PACOTEVICIO_URL = "https://correios-rastreamento-de-encomendas.p.rapidapi.com/track"
 PACOTEVICIO_HOST = "correios-rastreamento-de-encomendas.p.rapidapi.com"
+PACOTEVICIO_JT_URL = "https://api.pacotevicio.dev/jtexpress"
+PACOTEVICIO_JT_HOST = ""
+JT_PACOTEVICIO_MIN_INTERVAL_MINUTES = 120
 
 
 DEFAULT_HEADERS = {
@@ -192,6 +195,33 @@ def build_sign(timestamp, nonce, payload):
     return hashlib.md5(raw.encode("utf-8")).hexdigest().upper()
 
 
+def pacotevicio_headers(host):
+    api_key = env("PACOTEVICIO_API_KEY", required=True)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-RapidAPI-Key": api_key,
+    }
+    if host:
+        headers["X-RapidAPI-Host"] = host
+    return headers
+
+
+def fetch_pacotevicio(service, url, host, params):
+    r = requests.get(
+        url,
+        headers=pacotevicio_headers(host),
+        params=params,
+        timeout=45,
+    )
+    if r.status_code in (401, 403):
+        raise RuntimeError(f"PacoteVicio recusou a chave RapidAPI para {service}")
+    if r.status_code == 429:
+        raise RuntimeError(f"PacoteVicio limitou as consultas de {service} (HTTP 429)")
+    r.raise_for_status()
+    return r.json()
+
+
 # ── jadlog fetch / parse ──────────────────────────────────────────────────────
 
 def fetch_jadlog(cte):
@@ -266,32 +296,16 @@ def build_jadlog_error_message(cte, label):
 # ── correios / sedex fetch / parse ────────────────────────────────────────────
 
 def fetch_correios(code):
-    api_key = env("PACOTEVICIO_API_KEY", required=True)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "X-RapidAPI-Key": api_key,
-    }
-    rapidapi_host = env("PACOTEVICIO_RAPIDAPI_HOST", PACOTEVICIO_HOST)
-    if rapidapi_host:
-        headers["X-RapidAPI-Host"] = rapidapi_host
-
     params = {
         "tracking_code": code,
         "confidence_level": env("PACOTEVICIO_CONFIDENCE_LEVEL", "medium"),
     }
-    r = requests.get(
+    return fetch_pacotevicio(
+        "Correios",
         env("PACOTEVICIO_URL", PACOTEVICIO_URL),
-        headers=headers,
-        params=params,
-        timeout=45,
+        env("PACOTEVICIO_RAPIDAPI_HOST", PACOTEVICIO_HOST),
+        params,
     )
-    if r.status_code in (401, 403):
-        raise RuntimeError("PacoteVicio recusou a chave RapidAPI (verifique PACOTEVICIO_API_KEY)")
-    if r.status_code == 429:
-        raise RuntimeError("PacoteVicio limitou as consultas (HTTP 429)")
-    r.raise_for_status()
-    return r.json()
 
 
 def _strip_html(raw):
@@ -545,7 +559,33 @@ def track_one_jadlog(cte, state_dir, label):
 
 # ── J&T fetch ─────────────────────────────────────────────────────────────────
 
-def fetch_tracking(waybill, cpf):
+def jt_provider():
+    default = "pacotevicio" if env("PACOTEVICIO_API_KEY") else "official"
+    return env("JT_PROVIDER", default).strip().lower()
+
+
+def fetch_tracking(waybill, cpf, provider=None):
+    provider = provider or jt_provider()
+    if provider == "official":
+        return fetch_tracking_official(waybill, cpf)
+    return fetch_tracking_pacotevicio(waybill, cpf)
+
+
+def fetch_tracking_pacotevicio(waybill, cpf):
+    params = {
+        "tracking_code": waybill,
+        "confidence_level": env("PACOTEVICIO_CONFIDENCE_LEVEL", "medium"),
+        "document": "".join(ch for ch in str(cpf) if ch.isdigit()),
+    }
+    return fetch_pacotevicio(
+        "J&T",
+        env("PACOTEVICIO_JT_URL", PACOTEVICIO_JT_URL),
+        env("PACOTEVICIO_JT_HOST", PACOTEVICIO_JT_HOST),
+        params,
+    )
+
+
+def fetch_tracking_official(waybill, cpf):
     payload = {"cpf": cpf, "waybillNo": waybill, "langType": "PT"}
     timestamp = str(int(time.time() * 1000))
     nonce = f"0.{random.randint(10**14, 10**15-1)}"
@@ -559,7 +599,7 @@ def fetch_tracking(waybill, cpf):
 
 def extract_events(data):
     events = []
-    root = (data or {}).get("data") or {}
+    root = (data or {}).get("data") or (data or {})
     for d in (root.get("details") or []):
         sub = d.get("pathInfo") or d.get("traces")
         items = sub if sub else [d]
@@ -580,6 +620,20 @@ def event_key(ev):
 def diff_events(old, new):
     old_keys = {event_key(e) for e in old}
     return [e for e in new if event_key(e) not in old_keys]
+
+
+def should_skip_recent_check(state, key, min_minutes):
+    if min_minutes <= 0:
+        return False
+    raw = state.get(key)
+    if not raw:
+        return False
+    try:
+        last = datetime.fromisoformat(str(raw))
+        elapsed = (datetime.utcnow() - last).total_seconds() / 60
+        return elapsed < min_minutes
+    except Exception:
+        return False
 
 
 # ── estado ────────────────────────────────────────────────────────────────────
@@ -649,17 +703,25 @@ def send_whatsapp(message):
 def track_one(waybill, cpf, state_dir, label):
     state_path = Path(state_dir) / f"{waybill}.json"
     state = load_state(state_path)
+    provider = jt_provider()
+    min_interval = int(env("JT_PACOTEVICIO_MIN_INTERVAL_MINUTES", JT_PACOTEVICIO_MIN_INTERVAL_MINUTES))
 
     if state.get("delivered"):
         print(f"[skip] {waybill} ja entregue")
         return
 
+    if provider == "pacotevicio" and should_skip_recent_check(state, "last_checked_at", min_interval):
+        print(f"[skip] {waybill} consulta J&T recente; aguardando intervalo de {min_interval} min")
+        return
+
     try:
-        data = fetch_tracking(waybill, cpf)
+        data = fetch_tracking(waybill, cpf, provider)
     except Exception as e:
         print(f"[erro] {waybill} fetch falhou: {e}", file=sys.stderr)
         fail_count = state.get("fail_count", 0) + 1
         state["fail_count"] = fail_count
+        if provider == "pacotevicio":
+            state["last_checked_at"] = datetime.utcnow().isoformat()
         save_state(state_path, state)
         if fail_count >= MAX_FAIL:
             print(f"[alerta] {waybill} {fail_count} falhas, notificando")
@@ -679,6 +741,7 @@ def track_one(waybill, cpf, state_dir, label):
         "events": new_events,
         "fail_count": 0,
         "first_seen_at": state.get("first_seen_at") or datetime.utcnow().isoformat(),
+        "last_checked_at": datetime.utcnow().isoformat() if provider == "pacotevicio" else state.get("last_checked_at"),
         "last_status": new_events[0].get("status") if new_events else state.get("last_status"),
         "delivered": state.get("delivered", False),
         "delivered_at": state.get("delivered_at"),

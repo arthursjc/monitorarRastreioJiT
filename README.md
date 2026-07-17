@@ -43,15 +43,16 @@ No repo, va em **Settings → Secrets and variables → Actions → New reposito
 | `CALLMEBOT_PHONE` | seu telefone com codigo do pais sem `+`, ex `5511999999999`              |
 | `CALLMEBOT_APIKEY`| APIKey que o bot te mandou no WhatsApp                                   |
 
-Para rastrear Correios/Sedex sem contrato dos Correios, o projeto usa a API PacoteVicio
+Para rastrear Correios/Sedex e J&T sem depender de scraping instavel, o projeto usa a API PacoteVicio
 via RapidAPI. O plano BASIC gratuito informa limite de 1.000 requisicoes/mes; por isso o
-workflow dos Correios roda separado, a cada 2 horas. Crie tambem:
+workflow dos Correios roda separado, a cada 2 horas, e a J&T respeita intervalo minimo de 2 horas mesmo
+quando o workflow principal roda a cada 30 minutos por causa da Jadlog. Crie tambem:
 
 | Nome                  | Valor                                                                    |
 |-----------------------|--------------------------------------------------------------------------|
 | `CORREIOS_CODES`      | Codigos separados por virgula, ex `AD687043754BR`                        |
 | `CORREIOS_LABELS`     | Opcional. Apelidos, ex `AD687043754BR=Sedex Cliente X`                   |
-| `PACOTEVICIO_API_KEY` | Secret com a chave `X-RapidAPI-Key` do PacoteVicio                       |
+| `PACOTEVICIO_API_KEY` | Secret com a chave `X-RapidAPI-Key` do PacoteVicio para Correios e J&T   |
 
 Como pegar a chave:
 
@@ -96,11 +97,12 @@ CORREIOS_LABELS=AD687043754BR=Sedex Exemplo
 
 ## Custo
 
-GitHub Actions tem 2000 min/mes free em repo privado e ilimitado em publico. Para Correios, o PacoteVicio informa plano gratuito de 1.000 requisicoes/mes; com o cron atual de 2 em 2 horas, 1 codigo usa cerca de 360 requisicoes/mes.
+GitHub Actions tem 2000 min/mes free em repo privado e ilimitado em publico. Para Correios/J&T, o PacoteVicio informa plano gratuito de 1.000 requisicoes/mes; com o intervalo atual de 2 em 2 horas, 1 codigo usa cerca de 360 requisicoes/mes.
 
 ## Limitacoes conhecidas
 
-- A J&T pode bloquear se acharem que e bot. Se voltar HTTP 401/403 ou body com erro de assinatura, capture headers frescos do browser e cadastre nos secrets `JT_SIGN`/`JT_KEY`/`JT_TIMESTAMP`.
-- O Correios depende da disponibilidade do PacoteVicio/RapidAPI e da cota do plano escolhido.
+- A J&T usa PacoteVicio por padrao quando `PACOTEVICIO_API_KEY` existe. Para voltar ao endpoint oficial antigo, defina `JT_PROVIDER=official`.
+- Correios e J&T dependem da disponibilidade do PacoteVicio/RapidAPI e da cota do plano escolhido.
+- A Jadlog ainda usa consulta publica propria, porque ela nao aparece na API PacoteVicio.
 - CallMeBot e gratuito mas nao tem SLA. Pra producao seria melhor um servico pago (Twilio, etc).
 - O cron do GitHub Actions tem um delay tipico de 1-5 min em relacao ao horario marcado. Nao da pra confiar em "exato" 15 min.
