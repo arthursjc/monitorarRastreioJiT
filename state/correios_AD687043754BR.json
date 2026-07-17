@@ -1,3 +1,27 @@
 {
-  "fail_count": 3
+  "fail_count": 0,
+  "events": [
+    {
+      "time": "2026-07-17 08:51",
+      "status": "Objeto expedido",
+      "desc": "Objeto em transferência - por favor aguarde | Agência dos Correios - Santo Andre/SP",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-16 18:23",
+      "status": "Postado depois do horário",
+      "desc": "Objeto postado após o horário limite da unidade | Sujeito a encaminhamento no próximo dia útil | Agência dos Correios - Santo Andre/SP",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-16 12:07",
+      "status": "Etiqueta emitida: Aguardando postagem pelo remetente",
+      "desc": "Etiqueta emitida | Aguardando postagem pelo remetente | INTERFACE DO SISTEMA - BR",
+      "deliveryName": ""
+    }
+  ],
+  "first_seen_at": "2026-07-17T19:21:17.153771",
+  "last_status": "Objeto expedido",
+  "delivered": false,
+  "delivered_at": null
 }

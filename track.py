@@ -46,8 +46,8 @@ JADLOG_HEADERS = {
 CORREIOS_TRACKING_URL = "https://rastreamento.correios.com.br/app/index.php?objeto="
 PACOTEVICIO_URL = "https://correios-rastreamento-de-encomendas.p.rapidapi.com/track"
 PACOTEVICIO_HOST = "correios-rastreamento-de-encomendas.p.rapidapi.com"
-PACOTEVICIO_JT_URL = "https://api.pacotevicio.dev/jtexpress"
-PACOTEVICIO_JT_HOST = ""
+PACOTEVICIO_JT_URL = "https://correios-rastreamento-de-encomendas.p.rapidapi.com/track"
+PACOTEVICIO_JT_HOST = "correios-rastreamento-de-encomendas.p.rapidapi.com"
 JT_PACOTEVICIO_MIN_INTERVAL_MINUTES = 120
 
 
@@ -368,7 +368,8 @@ def extract_correios_events(data):
     events = []
 
     if isinstance(data, dict):
-        raw_events = data.get("eventos") or data.get("events") or data.get("historico") or []
+        root = data.get("correios_object") or data.get("data") or data
+        raw_events = root.get("eventos") or root.get("events") or root.get("historico") or []
     elif isinstance(data, list):
         raw_events = data
     else:
@@ -599,7 +600,7 @@ def fetch_tracking_official(waybill, cpf):
 
 def extract_events(data):
     events = []
-    root = (data or {}).get("data") or (data or {})
+    root = (data or {}).get("jtexpress_object") or (data or {}).get("data") or (data or {})
     for d in (root.get("details") or []):
         sub = d.get("pathInfo") or d.get("traces")
         items = sub if sub else [d]
