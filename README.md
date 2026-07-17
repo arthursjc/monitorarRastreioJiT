@@ -57,7 +57,7 @@ Como pegar a chave:
 
 1. Acesse https://rapidapi.com/pacotevicio-pacotevicio-default/api/correios-rastreamento-de-encomendas
 2. Assine o plano BASIC gratuito.
-3. Copie a chave exibida como `X-RapidAPI-Key`.
+3. Na aba **Endpoints**, confirme que o exemplo usa o host `correios-rastreamento-de-encomendas.p.rapidapi.com` e copie a chave exibida como `X-RapidAPI-Key`.
 4. Cadastre no GitHub em **Settings -> Secrets and variables -> Actions -> New repository secret** com o nome `PACOTEVICIO_API_KEY`.
 
 Os secrets abaixo sao **opcionais**. Se o curl original parar de funcionar (HTTP 401/403 ou body de erro), capture valores frescos no navegador (DevTools → aba Network → request `getDetailByWaybillNo` → copy headers) e cadastre aqui:

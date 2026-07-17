@@ -44,8 +44,8 @@ JADLOG_HEADERS = {
 }
 
 CORREIOS_TRACKING_URL = "https://rastreamento.correios.com.br/app/index.php?objeto="
-PACOTEVICIO_URL = "https://api.pacotevicio.dev/correios"
-PACOTEVICIO_HOST = "api.pacotevicio.dev"
+PACOTEVICIO_URL = "https://correios-rastreamento-de-encomendas.p.rapidapi.com/track"
+PACOTEVICIO_HOST = "correios-rastreamento-de-encomendas.p.rapidapi.com"
 
 
 DEFAULT_HEADERS = {
@@ -269,6 +269,7 @@ def fetch_correios(code):
     api_key = env("PACOTEVICIO_API_KEY", required=True)
     headers = {
         "Accept": "application/json",
+        "Content-Type": "application/json",
         "X-RapidAPI-Key": api_key,
     }
     rapidapi_host = env("PACOTEVICIO_RAPIDAPI_HOST", PACOTEVICIO_HOST)
