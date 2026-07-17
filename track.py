@@ -7,6 +7,7 @@ Variaveis de ambiente:
   CPF               CPF do destinatario
   CORREIOS_CODES    Codigos Correios/Sedex separados por virgula
   CORREIOS_LABELS   Apelidos: "AD687043754BR=Pedido Sedex"
+  PACOTEVICIO_API_KEY  Chave RapidAPI para rastreio Correios via PacoteVicio
   CALLMEBOT_PHONE   Ex: 5512988416345
   CALLMEBOT_APIKEY  API key CallMeBot
   STATE_DIR         Pasta de estado (default: state)
@@ -42,28 +43,9 @@ JADLOG_HEADERS = {
     "Origin": "https://www.jadlog.com.br",
 }
 
-CORREIOS_PUBLIC_URL = "https://rastreamentocorreios.info/consulta/"
-CORREIOS_TRACKING_URL = "https://rastreamentocorreios.info/consulta/"
-CORREIOS_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
-    "Cache-Control": "max-age=0",
-    "Host": "rastreamentocorreios.info",
-    "Referer": "https://rastreamentocorreios.info/sedex",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "same-origin",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0"
-    ),
-    "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Microsoft Edge";v="150"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-}
+CORREIOS_TRACKING_URL = "https://rastreamento.correios.com.br/app/index.php?objeto="
+PACOTEVICIO_URL = "https://api.pacotevicio.dev/correios"
+PACOTEVICIO_HOST = "api.pacotevicio.dev"
 
 
 DEFAULT_HEADERS = {
@@ -284,76 +266,31 @@ def build_jadlog_error_message(cte, label):
 # ── correios / sedex fetch / parse ────────────────────────────────────────────
 
 def fetch_correios(code):
-    base_url = env("CORREIOS_PUBLIC_URL", CORREIOS_PUBLIC_URL).rstrip("/")
-    url = f"{base_url}/{code}"
-    try:
-        return fetch_correios_http(url)
-    except Exception as http_error:
-        print(f"[warn] correios http falhou, tentando navegador: {http_error}")
-        return fetch_correios_browser(url)
+    api_key = env("PACOTEVICIO_API_KEY", required=True)
+    headers = {
+        "Accept": "application/json",
+        "X-RapidAPI-Key": api_key,
+    }
+    rapidapi_host = env("PACOTEVICIO_RAPIDAPI_HOST", PACOTEVICIO_HOST)
+    if rapidapi_host:
+        headers["X-RapidAPI-Host"] = rapidapi_host
 
-
-def fetch_correios_http(url):
-    try:
-        from curl_cffi import requests as browser_requests
-        session = browser_requests.Session(impersonate="chrome120")
-        session.get("https://rastreamentocorreios.info/sedex", headers=CORREIOS_HEADERS, timeout=35)
-        r = session.get(url, headers=CORREIOS_HEADERS, timeout=35)
-    except ImportError:
-        with requests.Session() as session:
-            session.get("https://rastreamentocorreios.info/sedex", headers=CORREIOS_HEADERS, timeout=35)
-            r = session.get(url, headers=CORREIOS_HEADERS, timeout=35)
+    params = {
+        "tracking_code": code,
+        "confidence_level": env("PACOTEVICIO_CONFIDENCE_LEVEL", "medium"),
+    }
+    r = requests.get(
+        env("PACOTEVICIO_URL", PACOTEVICIO_URL),
+        headers=headers,
+        params=params,
+        timeout=45,
+    )
+    if r.status_code in (401, 403):
+        raise RuntimeError("PacoteVicio recusou a chave RapidAPI (verifique PACOTEVICIO_API_KEY)")
     if r.status_code == 429:
-        raise RuntimeError("site publico dos Correios limitou as consultas (HTTP 429)")
+        raise RuntimeError("PacoteVicio limitou as consultas (HTTP 429)")
     r.raise_for_status()
-    if "Just a moment" in r.text or "challenge-platform" in r.text or "cf-challenge" in r.text:
-        raise RuntimeError("Cloudflare bloqueou a consulta publica dos Correios")
-    return r.text
-
-
-def fetch_correios_browser(url):
-    try:
-        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-        from playwright.sync_api import sync_playwright
-    except ImportError as e:
-        raise RuntimeError("playwright nao instalado para fallback de navegador") from e
-
-    with sync_playwright() as p:
-        launch_options = {
-            "headless": True,
-            "args": ["--disable-blink-features=AutomationControlled"],
-        }
-        channel = env("PLAYWRIGHT_CHANNEL", "chrome")
-        try:
-            browser = p.chromium.launch(channel=channel, **launch_options)
-        except Exception:
-            browser = p.chromium.launch(**launch_options)
-
-        try:
-            page = browser.new_page(
-                user_agent=CORREIOS_HEADERS["User-Agent"],
-                locale="pt-BR",
-                viewport={"width": 1366, "height": 768},
-            )
-            page.set_extra_http_headers({
-                "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
-                "Referer": "https://rastreamentocorreios.info/sedex",
-            })
-            page.goto("https://rastreamentocorreios.info/sedex", wait_until="domcontentloaded", timeout=45000)
-            page.wait_for_timeout(4000)
-            response = page.goto(url, wait_until="domcontentloaded", timeout=45000)
-            if response and response.status == 403:
-                raise RuntimeError("fallback navegador recebeu HTTP 403")
-            try:
-                page.wait_for_selector(".track-card", timeout=25000)
-            except PlaywrightTimeoutError:
-                page.wait_for_timeout(8000)
-            html = page.content()
-            if "Just a moment" in html or "challenge-platform" in html or "cf-challenge" in html:
-                raise RuntimeError("Cloudflare bloqueou tambem o fallback de navegador")
-            return html
-        finally:
-            browser.close()
+    return r.json()
 
 
 def _strip_html(raw):
@@ -368,6 +305,13 @@ def _strip_html(raw):
 def _parse_correios_datetime(raw):
     import re
     text = _strip_html(raw)
+    if not text:
+        return ""
+    try:
+        dt = datetime.strptime(text[:19], "%Y-%m-%d %H:%M:%S")
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        pass
     m = re.search(r"(\d{2})/(\d{2})/(\d{2})\s+(\d{2}:\d{2})", text)
     if not m:
         return text
@@ -375,29 +319,67 @@ def _parse_correios_datetime(raw):
     return f"20{year}-{month}-{day} {hour}"
 
 
-def extract_correios_events(html):
-    import re
+def _correios_unit_text(unit):
+    if not isinstance(unit, dict):
+        return ""
+
+    parts = []
+    unit_type = unit.get("tipo")
+    if unit_type:
+        parts.append(str(unit_type))
+
+    address = unit.get("endereco") or {}
+    if isinstance(address, dict):
+        city = address.get("cidade")
+        uf = address.get("uf")
+        if city and uf:
+            parts.append(f"{city}/{uf}")
+        elif city:
+            parts.append(str(city))
+        elif uf:
+            parts.append(str(uf))
+
+    return " - ".join(parts)
+
+
+def _correios_event_time(ev):
+    raw = ev.get("dtHrCriado") or ev.get("data") or ev.get("time") or ev.get("timeStr")
+    if isinstance(raw, dict):
+        raw = raw.get("date") or raw.get("datetime")
+    return _parse_correios_datetime(raw)
+
+
+def extract_correios_events(data):
     events = []
 
-    for chunk in html.split('class="card track-card"')[1:]:
-        date_match = re.search(r"<small>(.*?)</small>", chunk, re.DOTALL | re.IGNORECASE)
-        status_match = re.search(r'<p class="mb-0">(.*?)</p>', chunk, re.DOTALL | re.IGNORECASE)
-        location_match = re.search(
-            r'<p class="smaller-text text-mediumgray mb-0">(.*?)</p>',
-            chunk,
-            re.DOTALL | re.IGNORECASE,
-        )
-        if not date_match or not status_match:
+    if isinstance(data, dict):
+        raw_events = data.get("eventos") or data.get("events") or data.get("historico") or []
+    elif isinstance(data, list):
+        raw_events = data
+    else:
+        raw_events = []
+
+    for ev in raw_events:
+        if not isinstance(ev, dict):
             continue
 
-        status = _strip_html(status_match.group(1))
-        location = _strip_html(location_match.group(1)) if location_match else ""
-        if location.lower().startswith("ha ") or location.lower().startswith("há "):
-            location = ""
-        desc = location
+        status = (
+            ev.get("descricaoFrontEnd")
+            or ev.get("descricaoWeb")
+            or ev.get("descricao")
+            or ev.get("status")
+            or ev.get("statusDesc")
+            or ""
+        )
+        desc_parts = [
+            ev.get("descricao") if ev.get("descricao") != status else "",
+            ev.get("detalhe"),
+            _correios_unit_text(ev.get("unidade")),
+        ]
+        desc = " | ".join(_strip_html(part) for part in desc_parts if part)
         events.append({
-            "time": _parse_correios_datetime(date_match.group(1)),
-            "status": status,
+            "time": _correios_event_time(ev),
+            "status": _strip_html(status),
             "desc": desc,
             "deliveryName": "",
         })

@@ -43,13 +43,22 @@ No repo, va em **Settings → Secrets and variables → Actions → New reposito
 | `CALLMEBOT_PHONE` | seu telefone com codigo do pais sem `+`, ex `5511999999999`              |
 | `CALLMEBOT_APIKEY`| APIKey que o bot te mandou no WhatsApp                                   |
 
-Para rastrear Correios/Sedex sem contrato dos Correios, o projeto consulta a pagina publica
-`rastreamentocorreios.info/consulta/<codigo>`. Crie tambem:
+Para rastrear Correios/Sedex sem contrato dos Correios, o projeto usa a API PacoteVicio
+via RapidAPI. O plano BASIC gratuito informa limite de 1.000 requisicoes/mes; por isso o
+workflow dos Correios roda separado, a cada 2 horas. Crie tambem:
 
 | Nome                  | Valor                                                                    |
 |-----------------------|--------------------------------------------------------------------------|
 | `CORREIOS_CODES`      | Codigos separados por virgula, ex `AD687043754BR`                        |
 | `CORREIOS_LABELS`     | Opcional. Apelidos, ex `AD687043754BR=Sedex Cliente X`                   |
+| `PACOTEVICIO_API_KEY` | Secret com a chave `X-RapidAPI-Key` do PacoteVicio                       |
+
+Como pegar a chave:
+
+1. Acesse https://rapidapi.com/pacotevicio-pacotevicio-default/api/correios-rastreamento-de-encomendas
+2. Assine o plano BASIC gratuito.
+3. Copie a chave exibida como `X-RapidAPI-Key`.
+4. Cadastre no GitHub em **Settings -> Secrets and variables -> Actions -> New repository secret** com o nome `PACOTEVICIO_API_KEY`.
 
 Os secrets abaixo sao **opcionais**. Se o curl original parar de funcionar (HTTP 401/403 ou body de erro), capture valores frescos no navegador (DevTools → aba Network → request `getDetailByWaybillNo` → copy headers) e cadastre aqui:
 
@@ -78,7 +87,7 @@ Depois, clique em **jt-tracker → Run workflow** pra disparar uma rodada manual
 
 Edita o secret `WAYBILL_NO` (e `CPF` se for outro destinatario). Apaga o conteudo de `state/last_status.json` deixando so `{"events": []}` se quiser comecar do zero.
 
-Para Sedex/Correios, edite `CORREIOS_CODES`. Exemplo:
+Para Sedex/Correios, edite `CORREIOS_CODES` em **Variables**. Exemplo:
 
 ```
 CORREIOS_CODES=AD687043754BR
@@ -87,10 +96,11 @@ CORREIOS_LABELS=AD687043754BR=Sedex Exemplo
 
 ## Custo
 
-Zero. GitHub Actions tem 2000 min/mes free em repo privado e ilimitado em publico. Cada run leva uns 15-20s, entao da pra rodar a cada 15 min folgado o mes inteiro.
+GitHub Actions tem 2000 min/mes free em repo privado e ilimitado em publico. Para Correios, o PacoteVicio informa plano gratuito de 1.000 requisicoes/mes; com o cron atual de 2 em 2 horas, 1 codigo usa cerca de 360 requisicoes/mes.
 
 ## Limitacoes conhecidas
 
 - A J&T pode bloquear se acharem que e bot. Se voltar HTTP 401/403 ou body com erro de assinatura, capture headers frescos do browser e cadastre nos secrets `JT_SIGN`/`JT_KEY`/`JT_TIMESTAMP`.
+- O Correios depende da disponibilidade do PacoteVicio/RapidAPI e da cota do plano escolhido.
 - CallMeBot e gratuito mas nao tem SLA. Pra producao seria melhor um servico pago (Twilio, etc).
 - O cron do GitHub Actions tem um delay tipico de 1-5 min em relacao ao horario marcado. Nao da pra confiar em "exato" 15 min.

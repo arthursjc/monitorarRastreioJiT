@@ -1,15 +1,15 @@
-name: jt-tracker
+name: correios-tracker
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 */2 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: jt-tracker
+  group: correios-tracker
   cancel-in-progress: false
 
 jobs:
@@ -27,15 +27,14 @@ jobs:
       - name: Install deps
         run: pip install requests
 
-      - name: Run tracker
+      - name: Run Correios tracker
         env:
-          WAYBILL_NO: ${{ vars.WAYBILL_NO }}
-          WAYBILL_LABELS: ${{ vars.WAYBILL_LABELS }}
           CALLMEBOT_PHONE: "5512988416345"
-          CPF: ${{ secrets.CPF }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
-          JADLOG_CTE: ${{ vars.JADLOG_CTE }}
-          JADLOG_LABELS: ${{ vars.JADLOG_LABELS }}
+          CORREIOS_CODES: ${{ vars.CORREIOS_CODES }}
+          CORREIOS_LABELS: ${{ vars.CORREIOS_LABELS }}
+          PACOTEVICIO_API_KEY: ${{ secrets.PACOTEVICIO_API_KEY }}
+          PACOTEVICIO_CONFIDENCE_LEVEL: medium
         run: python track.py
 
       - name: Commit state se mudou
@@ -44,7 +43,7 @@ jobs:
           git config user.email "jt-tracker-bot@users.noreply.github.com"
           if [[ -n "$(git status --porcelain state/)" ]]; then
             git add state/
-            git commit -m "chore: atualiza state [skip ci]"
+            git commit -m "chore: atualiza state correios [skip ci]"
             git push
           else
             echo "sem mudancas no state"
