@@ -46,16 +46,23 @@ CORREIOS_PUBLIC_URL = "https://rastreamentocorreios.info/consulta/"
 CORREIOS_TRACKING_URL = "https://rastreamentocorreios.info/consulta/"
 CORREIOS_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
     "Cache-Control": "max-age=0",
+    "Host": "rastreamentocorreios.info",
     "Referer": "https://rastreamentocorreios.info/sedex",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-User": "?1",
     "Upgrade-Insecure-Requests": "1",
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0"
     ),
+    "sec-ch-ua": '"Not;A=Brand";v="8", "Chromium";v="150", "Microsoft Edge";v="150"',
     "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "Windows",
+    "sec-ch-ua-platform": '"Windows"',
 }
 
 
@@ -277,8 +284,17 @@ def build_jadlog_error_message(cte, label):
 # ── correios / sedex fetch / parse ────────────────────────────────────────────
 
 def fetch_correios(code):
-    url = f"{env('CORREIOS_PUBLIC_URL', CORREIOS_PUBLIC_URL).rstrip('/')}/{code}"
-    r = requests.get(url, headers=CORREIOS_HEADERS, timeout=35)
+    base_url = env("CORREIOS_PUBLIC_URL", CORREIOS_PUBLIC_URL).rstrip("/")
+    url = f"{base_url}/{code}"
+    try:
+        from curl_cffi import requests as browser_requests
+        session = browser_requests.Session(impersonate="chrome120")
+        session.get("https://rastreamentocorreios.info/sedex", headers=CORREIOS_HEADERS, timeout=35)
+        r = session.get(url, headers=CORREIOS_HEADERS, timeout=35)
+    except ImportError:
+        with requests.Session() as session:
+            session.get("https://rastreamentocorreios.info/sedex", headers=CORREIOS_HEADERS, timeout=35)
+            r = session.get(url, headers=CORREIOS_HEADERS, timeout=35)
     if r.status_code == 429:
         raise RuntimeError("site publico dos Correios limitou as consultas (HTTP 429)")
     r.raise_for_status()
