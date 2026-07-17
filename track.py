@@ -287,6 +287,14 @@ def fetch_correios(code):
     base_url = env("CORREIOS_PUBLIC_URL", CORREIOS_PUBLIC_URL).rstrip("/")
     url = f"{base_url}/{code}"
     try:
+        return fetch_correios_http(url)
+    except Exception as http_error:
+        print(f"[warn] correios http falhou, tentando navegador: {http_error}")
+        return fetch_correios_browser(url)
+
+
+def fetch_correios_http(url):
+    try:
         from curl_cffi import requests as browser_requests
         session = browser_requests.Session(impersonate="chrome120")
         session.get("https://rastreamentocorreios.info/sedex", headers=CORREIOS_HEADERS, timeout=35)
@@ -301,6 +309,51 @@ def fetch_correios(code):
     if "Just a moment" in r.text or "challenge-platform" in r.text or "cf-challenge" in r.text:
         raise RuntimeError("Cloudflare bloqueou a consulta publica dos Correios")
     return r.text
+
+
+def fetch_correios_browser(url):
+    try:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        from playwright.sync_api import sync_playwright
+    except ImportError as e:
+        raise RuntimeError("playwright nao instalado para fallback de navegador") from e
+
+    with sync_playwright() as p:
+        launch_options = {
+            "headless": True,
+            "args": ["--disable-blink-features=AutomationControlled"],
+        }
+        channel = env("PLAYWRIGHT_CHANNEL", "chrome")
+        try:
+            browser = p.chromium.launch(channel=channel, **launch_options)
+        except Exception:
+            browser = p.chromium.launch(**launch_options)
+
+        try:
+            page = browser.new_page(
+                user_agent=CORREIOS_HEADERS["User-Agent"],
+                locale="pt-BR",
+                viewport={"width": 1366, "height": 768},
+            )
+            page.set_extra_http_headers({
+                "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+                "Referer": "https://rastreamentocorreios.info/sedex",
+            })
+            page.goto("https://rastreamentocorreios.info/sedex", wait_until="domcontentloaded", timeout=45000)
+            page.wait_for_timeout(4000)
+            response = page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            if response and response.status == 403:
+                raise RuntimeError("fallback navegador recebeu HTTP 403")
+            try:
+                page.wait_for_selector(".track-card", timeout=25000)
+            except PlaywrightTimeoutError:
+                page.wait_for_timeout(8000)
+            html = page.content()
+            if "Just a moment" in html or "challenge-platform" in html or "cf-challenge" in html:
+                raise RuntimeError("Cloudflare bloqueou tambem o fallback de navegador")
+            return html
+        finally:
+            browser.close()
 
 
 def _strip_html(raw):
