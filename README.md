@@ -1,14 +1,14 @@
 # jt-tracker
 
-Monitora o rastreio de uma encomenda da J&T Express Brasil a cada 15 minutos via GitHub Actions. Quando aparece um evento novo, envia um alerta no seu WhatsApp via CallMeBot.
+Monitora rastreios de encomendas a cada 2 horas via GitHub Actions. Quando aparece um evento novo, envia um alerta no seu WhatsApp via CallMeBot.
 
 ## Como funciona
 
-1. O workflow `track.yml` roda a cada 15 min.
-2. `track.py` chama o endpoint `getDetailByWaybillNo` da J&T.
-3. Compara os eventos com o que foi salvo em `state/last_status.json` no commit anterior.
+1. Os workflows rodam a cada 2 horas.
+2. `track.py` consulta J&T/Correios via PacoteVicio e Jadlog pelo metodo publico atual.
+3. Compara os eventos com o que foi salvo nos arquivos da pasta `state/` no commit anterior.
 4. Se aparecer evento novo, dispara um GET no CallMeBot que cai no seu WhatsApp.
-5. Commita o `state/last_status.json` atualizado de volta no repo.
+5. Commita os arquivos de estado atualizados de volta no repo.
 
 ## Passo 1: criar o repo
 
@@ -17,7 +17,8 @@ Crie um repo novo no GitHub (pode ser privado, melhor) e jogue todos esses arqui
 ```
 .
 ├── .github/workflows/track.yml
-├── state/last_status.json
+├── .github/workflows/track-correios.yml
+├── state/
 ├── track.py
 ├── .gitignore
 └── README.md
@@ -45,8 +46,8 @@ No repo, va em **Settings → Secrets and variables → Actions → New reposito
 
 Para rastrear Correios/Sedex e J&T sem depender de scraping instavel, o projeto usa a API PacoteVicio
 via RapidAPI. O plano BASIC gratuito informa limite de 1.000 requisicoes/mes; por isso o
-workflow dos Correios roda separado, a cada 2 horas, e a J&T respeita intervalo minimo de 2 horas mesmo
-quando o workflow principal roda a cada 30 minutos por causa da Jadlog. Crie tambem:
+workflow dos Correios roda separado, a cada 2 horas, e o workflow principal tambem roda a cada 2 horas
+para J&T e Jadlog. Crie tambem:
 
 | Nome                  | Valor                                                                    |
 |-----------------------|--------------------------------------------------------------------------|
@@ -61,13 +62,11 @@ Como pegar a chave:
 3. Na aba **Endpoints**, confirme que o exemplo usa o host `correios-rastreamento-de-encomendas.p.rapidapi.com` e copie a chave exibida como `X-RapidAPI-Key`.
 4. Cadastre no GitHub em **Settings -> Secrets and variables -> Actions -> New repository secret** com o nome `PACOTEVICIO_API_KEY`.
 
-Os secrets abaixo sao **opcionais**. Se o curl original parar de funcionar (HTTP 401/403 ou body de erro), capture valores frescos no navegador (DevTools → aba Network → request `getDetailByWaybillNo` → copy headers) e cadastre aqui:
+Esta variable e **opcional**. Use apenas se quiser voltar a J&T para o endpoint oficial antigo:
 
-| Nome           | Quando usar                                            |
-|----------------|--------------------------------------------------------|
-| `JT_SIGN`      | Se a J&T comecar a recusar pela assinatura             |
-| `JT_KEY`       | Idem                                                   |
-| `JT_TIMESTAMP` | Idem. Use o timestamp em ms                            |
+| Nome          | Valor                                                  |
+|---------------|--------------------------------------------------------|
+| `JT_PROVIDER` | `official` para nao usar PacoteVicio na J&T            |
 
 ## Passo 4: ativar o workflow
 
@@ -82,11 +81,11 @@ Depois, clique em **jt-tracker → Run workflow** pra disparar uma rodada manual
   - `[ok] N eventos no rastreio` → fetch funcionou.
   - `[ok] sem mudancas` → estado igual ao anterior, sem alerta.
   - `[novo] N eventos novos` → vai disparar o WhatsApp.
-- O `state/last_status.json` vai ser atualizado e voce ve o commit feito pelo `jt-tracker-bot`.
+- Os arquivos da pasta `state/` vao ser atualizados e voce ve o commit feito pelo `jt-tracker-bot`.
 
 ## Trocar pra outra encomenda
 
-Edita o secret `WAYBILL_NO` (e `CPF` se for outro destinatario). Apaga o conteudo de `state/last_status.json` deixando so `{"events": []}` se quiser comecar do zero.
+Edita a variable `WAYBILL_NO` (e o secret `CPF` se for outro destinatario). Apague o arquivo correspondente dentro de `state/` se quiser comecar do zero para uma encomenda.
 
 Para Sedex/Correios, edite `CORREIOS_CODES` em **Variables**. Exemplo:
 
@@ -105,4 +104,4 @@ GitHub Actions tem 2000 min/mes free em repo privado e ilimitado em publico. Par
 - Correios e J&T dependem da disponibilidade do PacoteVicio/RapidAPI e da cota do plano escolhido.
 - A Jadlog ainda usa consulta publica propria, porque ela nao aparece na API PacoteVicio.
 - CallMeBot e gratuito mas nao tem SLA. Pra producao seria melhor um servico pago (Twilio, etc).
-- O cron do GitHub Actions tem um delay tipico de 1-5 min em relacao ao horario marcado. Nao da pra confiar em "exato" 15 min.
+- O cron do GitHub Actions tem um delay tipico de 1-5 min em relacao ao horario marcado. Nao da pra confiar em "exato" de 2 em 2 horas.
