@@ -2,6 +2,12 @@
   "fail_count": 0,
   "events": [
     {
+      "time": "2026-07-20 13:53",
+      "status": "ENTREGUE",
+      "desc": "Objeto entregue ao destinatário | Queremos te ouvir! Responda a uma pesquisa rápida e nos ajude a melhorar a sua experiência: https://survey3.medallia.com/?correios-nps-sms-sro&obj=AD687043754BR | Unidade de Distribuição - Sao Jose dos Campos/SP",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-20 08:46",
       "status": "Saiu para entrega ao destinatário",
       "desc": "Objeto saiu para entrega ao destinatário | É preciso ter alguém no endereço para receber o carteiro | Unidade de Distribuição - Sao Jose dos Campos/SP",
@@ -39,7 +45,7 @@
     }
   ],
   "first_seen_at": "2026-07-17T19:21:17.153771",
-  "last_status": "Saiu para entrega ao destinatário",
-  "delivered": false,
-  "delivered_at": null
+  "last_status": "ENTREGUE",
+  "delivered": true,
+  "delivered_at": "2026-07-20 13:53"
 }
