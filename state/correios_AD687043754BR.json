@@ -2,6 +2,12 @@
   "fail_count": 0,
   "events": [
     {
+      "time": "2026-07-20 05:42",
+      "status": "Objeto expedido",
+      "desc": "Objeto em transferência - por favor aguarde | Unidade de Tratamento - Sao Jose dos Campos/SP",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-17 22:21",
       "status": "Objeto expedido",
       "desc": "Objeto em transferência - por favor aguarde | Unidade de Tratamento - Sao Paulo/SP",
