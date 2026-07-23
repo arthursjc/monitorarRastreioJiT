@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-07-23 15:08:28",
+      "status": "A transportadora coletou o pacote no ponto Pegaki.",
+      "desc": "A transportadora realizou a coleta do pacote no ponto Pegaki. | Edifer Materiais para Construção",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-22 15:57:49",
       "status": "O pacote foi postado em um ponto Pegaki.",
       "desc": "O pacote foi postado pelo remetente em um ponto Pegaki (PUDO) e aguarda coleta da transportadora. | Edifer Materiais para Construção",
@@ -21,7 +27,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-23T16:15:29.891508",
-  "last_status": "O pacote foi postado em um ponto Pegaki.",
+  "last_status": "A transportadora coletou o pacote no ponto Pegaki.",
   "delivered": false,
   "delivered_at": null
 }
