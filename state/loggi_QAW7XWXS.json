@@ -1,6 +1,18 @@
 {
   "events": [
     {
+      "time": "2026-07-23 17:08:44",
+      "status": "O pacote está sendo organizado para seguir viagem.",
+      "desc": "O pacote foi agrupado com outros envios para otimizar o transporte e direcionamento da rota.",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-23 17:08:41",
+      "status": "O pacote chegou ao centro logístico da transportadora.",
+      "desc": "O pacote chegou ao centro de distribuição (HUB) da transportadora para triagem e encaminhamento.",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-23 15:08:28",
       "status": "A transportadora coletou o pacote no ponto Pegaki.",
       "desc": "A transportadora realizou a coleta do pacote no ponto Pegaki. | Edifer Materiais para Construção",
@@ -27,7 +39,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-23T16:15:29.891508",
-  "last_status": "A transportadora coletou o pacote no ponto Pegaki.",
+  "last_status": "O pacote está sendo organizado para seguir viagem.",
   "delivered": false,
   "delivered_at": null
 }
