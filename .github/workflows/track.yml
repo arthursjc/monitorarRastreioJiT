@@ -38,6 +38,8 @@ jobs:
           JT_PACOTEVICIO_MIN_INTERVAL_MINUTES: 120
           JADLOG_CTE: ${{ vars.JADLOG_CTE }}
           JADLOG_LABELS: ${{ vars.JADLOG_LABELS }}
+          LOGGI_CODES: ${{ vars.LOGGI_CODES }}
+          LOGGI_LABELS: ${{ vars.LOGGI_LABELS }}
         run: python track.py
 
       - name: Commit state se mudou

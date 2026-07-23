@@ -5,6 +5,8 @@ Variaveis de ambiente:
   WAYBILL_NO        Numeros separados por virgula
   WAYBILL_LABELS    Apelidos: "888030708823905=Tenis Nike,123=Livro"
   CPF               CPF do destinatario
+  LOGGI_CODES       Codigos Loggi/SuperFrete separados por virgula
+  LOGGI_LABELS      Apelidos: "QAW7XWXS=Pedido Loggi"
   CORREIOS_CODES    Codigos Correios/Sedex separados por virgula
   CORREIOS_LABELS   Apelidos: "AD687043754BR=Pedido Sedex"
   PACOTEVICIO_API_KEY  Chave RapidAPI para rastreio Correios/J&T via PacoteVicio
@@ -41,6 +43,17 @@ JADLOG_HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded",
     "Referer": "https://www.jadlog.com.br/jadlog/captcha",
     "Origin": "https://www.jadlog.com.br",
+}
+
+LOGGI_URL = "https://rastreamento.superfrete.com/public/tracking/"
+LOGGI_TRACKING_URL = "https://rastreamento.superfrete.com/?code="
+LOGGI_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://rastreamento.superfrete.com/",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0"
+    ),
 }
 
 CORREIOS_TRACKING_URL = "https://rastreamento.correios.com.br/app/index.php?objeto="
@@ -291,6 +304,134 @@ def build_jadlog_error_message(cte, label):
         f"Falha ao consultar rastreio por {MAX_FAIL} vezes seguidas. Verifique manualmente.\n\n"
         f"🔗 {JADLOG_TRACKING_URL}{cte}"
     )
+
+
+# ── Loggi / SuperFrete fetch / parse ──────────────────────────────────────────
+
+def fetch_loggi(code):
+    url = f"{env('LOGGI_URL', LOGGI_URL).rstrip('/')}/{code}"
+    r = requests.get(
+        url,
+        headers=LOGGI_HEADERS,
+        params={"application_id": env("SUPERFRETE_APPLICATION_ID", "100")},
+        timeout=30,
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def extract_loggi_events(data):
+    events = []
+    provider = (data or {}).get("provider_tracking") or {}
+    tracking = provider.get("tracking") or {}
+    raw_events = tracking.get("eventos") or []
+
+    for ev in raw_events:
+        if not isinstance(ev, dict):
+            continue
+        status = ev.get("status") or ""
+        desc_parts = [ev.get("descricao"), ev.get("unidade")]
+        desc = " | ".join(_strip_html(part) for part in desc_parts if part and part != status)
+        events.append({
+            "time": ev.get("data") or ev.get("time") or "",
+            "status": _strip_html(status),
+            "desc": desc,
+            "deliveryName": "",
+        })
+    return events
+
+
+def build_loggi_message(code, label, new_events):
+    name = label or code
+    lines = [f"📦 Loggi - {name}"]
+    for ev in new_events[:3]:
+        text = clean_text(ev.get("status"), ev.get("desc"))
+        emoji = pick_emoji(text)
+        dt = format_datetime(ev.get("time"))
+        lines.append(f"\n{emoji} {dt}\n{text}")
+    lines.append(f"\n🔗 {LOGGI_TRACKING_URL}{code}")
+    return "\n".join(lines)
+
+
+def build_loggi_delivered_message(code, label):
+    name = label or code
+    return (
+        f"✅ Loggi - {name}\n\n"
+        f"Sua encomenda foi entregue! 🎉\n\n"
+        f"🔗 {LOGGI_TRACKING_URL}{code}"
+    )
+
+
+def build_loggi_error_message(code, label):
+    name = label or code
+    return (
+        f"⚠️ Loggi - {name}\n\n"
+        f"Falha ao consultar rastreio por {MAX_FAIL} vezes seguidas. Verifique manualmente.\n\n"
+        f"🔗 {LOGGI_TRACKING_URL}{code}"
+    )
+
+
+def track_one_loggi(code, state_dir, label):
+    state_path = Path(state_dir) / f"loggi_{code}.json"
+    state = load_state(state_path)
+
+    if state.get("delivered"):
+        print(f"[skip] loggi {code} ja entregue")
+        return
+
+    try:
+        data = fetch_loggi(code)
+    except Exception as e:
+        print(f"[erro] loggi {code} fetch falhou: {e}", file=sys.stderr)
+        fail_count = state.get("fail_count", 0) + 1
+        state["fail_count"] = fail_count
+        save_state(state_path, state)
+        if fail_count >= MAX_FAIL:
+            print(f"[alerta] loggi {code} {fail_count} falhas, notificando")
+            try:
+                send_whatsapp(build_loggi_error_message(code, label))
+            except Exception:
+                pass
+        return
+
+    new_events = extract_loggi_events(data)
+    print(f"[ok] loggi {code} {len(new_events)} eventos")
+
+    old_events = state.get("events", [])
+    new_only = diff_events(old_events, new_events)
+
+    state.update({
+        "events": new_events,
+        "fail_count": 0,
+        "first_seen_at": state.get("first_seen_at") or datetime.utcnow().isoformat(),
+        "last_status": new_events[0].get("status") if new_events else state.get("last_status"),
+        "delivered": state.get("delivered", False),
+        "delivered_at": state.get("delivered_at"),
+    })
+
+    if not new_only:
+        print(f"[ok] loggi {code} sem mudancas")
+        save_state(state_path, state)
+        return
+
+    print(f"[novo] loggi {code} {len(new_only)} eventos novos")
+
+    delivery_ev = next((e for e in new_only if is_delivered(e)), None)
+    if delivery_ev:
+        state["delivered"] = True
+        state["delivered_at"] = delivery_ev.get("time") or datetime.utcnow().isoformat()
+        print(f"[entregue] loggi {code}")
+        try:
+            send_whatsapp(build_loggi_delivered_message(code, label))
+        except Exception as e:
+            print(f"[erro] envio whatsapp: {e}", file=sys.stderr)
+    else:
+        try:
+            send_whatsapp(build_loggi_message(code, label, new_only))
+        except Exception as e:
+            print(f"[erro] envio whatsapp: {e}", file=sys.stderr)
+
+    save_state(state_path, state)
 
 
 # ── correios / sedex fetch / parse ────────────────────────────────────────────
@@ -790,6 +931,13 @@ def main():
         jadlog_labels = parse_labels(env("JADLOG_LABELS", ""))
         for cte in jadlog_ctes:
             track_one_jadlog(cte, state_dir, jadlog_labels.get(cte))
+
+    loggi_raw = env("LOGGI_CODES", "")
+    if loggi_raw:
+        loggi_codes = [c.strip().upper() for c in loggi_raw.split(",") if c.strip()]
+        loggi_labels = parse_labels(env("LOGGI_LABELS", ""))
+        for code in loggi_codes:
+            track_one_loggi(code, state_dir, loggi_labels.get(code))
 
     correios_raw = env("CORREIOS_CODES", "")
     if correios_raw:
