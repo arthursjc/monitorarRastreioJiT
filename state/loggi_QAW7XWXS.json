@@ -1,0 +1,27 @@
+{
+  "events": [
+    {
+      "time": "2026-07-22 15:57:49",
+      "status": "O pacote foi postado em um ponto Pegaki.",
+      "desc": "O pacote foi postado pelo remetente em um ponto Pegaki (PUDO) e aguarda coleta da transportadora. | Edifer Materiais para Construção",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-22 09:36:12",
+      "status": "Criado",
+      "desc": "",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-22 09:35:32",
+      "status": "Adicionado no sistema",
+      "desc": "A etiqueta de envio já foi criada e o pacote está pronto para a coleta.",
+      "deliveryName": ""
+    }
+  ],
+  "fail_count": 0,
+  "first_seen_at": "2026-07-23T16:15:29.891508",
+  "last_status": "O pacote foi postado em um ponto Pegaki.",
+  "delivered": false,
+  "delivered_at": null
+}
