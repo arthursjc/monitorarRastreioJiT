@@ -1,6 +1,18 @@
 {
   "events": [
     {
+      "time": "2026-07-24 01:02:49",
+      "status": "Conferido",
+      "desc": "O pacote foi confirmado em uma base da Loggi e vai ser preparado para transferência.",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-24 01:02:49",
+      "status": "Medido e pesado",
+      "desc": "O pacote já teve suas dimensões conferidas.",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-23 17:08:44",
       "status": "Unitizado no HUB",
       "desc": "",
@@ -39,7 +51,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-23T16:15:29.891508",
-  "last_status": "Unitizado no HUB",
+  "last_status": "Conferido",
   "delivered": false,
   "delivered_at": null
 }
