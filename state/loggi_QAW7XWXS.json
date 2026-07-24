@@ -1,6 +1,18 @@
 {
   "events": [
     {
+      "time": "2026-07-24 06:50:08",
+      "status": "Chegou em uma base",
+      "desc": "Tudo certo, o pacote está em uma base da Loggi. | São José dos Campos, SP",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-07-24 03:40:58",
+      "status": "Saiu de uma base",
+      "desc": "O pacote está em transferência de uma base para outra. | Cajamar, SP",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-24 01:02:49",
       "status": "Conferido",
       "desc": "O pacote foi confirmado em uma base da Loggi e vai ser preparado para transferência.",
@@ -51,7 +63,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-23T16:15:29.891508",
-  "last_status": "Conferido",
+  "last_status": "Chegou em uma base",
   "delivered": false,
   "delivered_at": null
 }
