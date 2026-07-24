@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-07-24 10:59:26",
+      "status": "Entregue",
+      "desc": "O pacote chegou ao destino final.",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-24 09:10:08",
       "status": "Em rota",
       "desc": "O pacote está a caminho.",
@@ -69,7 +75,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-23T16:15:29.891508",
-  "last_status": "Em rota",
-  "delivered": false,
-  "delivered_at": null
+  "last_status": "Entregue",
+  "delivered": true,
+  "delivered_at": "2026-07-24 10:59:26"
 }
