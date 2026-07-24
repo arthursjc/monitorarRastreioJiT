@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-07-24 09:10:08",
+      "status": "Em rota",
+      "desc": "O pacote está a caminho.",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-07-24 06:50:08",
       "status": "Chegou em uma base",
       "desc": "Tudo certo, o pacote está em uma base da Loggi. | São José dos Campos, SP",
@@ -63,7 +69,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-07-23T16:15:29.891508",
-  "last_status": "Chegou em uma base",
+  "last_status": "Em rota",
   "delivered": false,
   "delivered_at": null
 }
