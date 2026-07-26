@@ -1,24 +1,5 @@
 {
-  "events": [
-    {
-      "time": "19/05/2026 - 16:39",
-      "status": "Seu produto foi entregue em um ponto Jadlog.",
-      "desc": "",
-      "deliveryName": ""
-    },
-    {
-      "time": "20/05/2026 - 15:29",
-      "status": "Seu produto foi coletado no ponto de apoio e já está com a Jadlog.",
-      "desc": "",
-      "deliveryName": ""
-    },
-    {
-      "time": "25/05/2026 - 05:05",
-      "status": "Seu produto está em transferência interna para Jadlog destino.",
-      "desc": "",
-      "deliveryName": ""
-    }
-  ],
+  "events": [],
   "fail_count": 0,
   "first_seen_at": "2026-05-20T17:54:13.416009",
   "last_status": "Seu produto está em transferência interna para Jadlog destino.",
