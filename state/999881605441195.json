@@ -1,0 +1,52 @@
+{
+  "events": [
+    {
+      "time": "2026-08-06 08:41:01",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Saída da encomenda expressa [SP BRE] enviada para [DC GRU-SP]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-08-06 08:40:48",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Saída da encomenda expressa [SP BRE] enviada para [DC GRU-SP]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-08-06 08:28:54",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-08-06 08:28:11",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-08-05 17:48:17",
+      "status": "Em transferencia",
+      "desc": "[Sorocaba] Saída da encomenda expressa [DC SOD 02-SP] enviada para [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-08-05 15:29:48",
+      "status": "Em transferencia",
+      "desc": "[São Roque] Saída da encomenda expressa [SRQ-SP] enviada para [DC SOD 02-SP]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-08-05 15:29:40",
+      "status": "Coletado",
+      "desc": "[São Roque] [SRQ-SP] Seu entregador T****S retirou a encomenda. Se você tiver qualquer problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "TAC CARRO WELINGTON JOHNY OLIVEIRA ALVES"
+    }
+  ],
+  "fail_count": 0,
+  "first_seen_at": "2026-08-06T22:23:09.181731",
+  "last_checked_at": "2026-08-06T22:23:09.181743",
+  "last_status": "Em transferencia",
+  "delivered": false,
+  "delivered_at": null
+}
