@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-08-07 13:02:37",
+      "status": "Pedido Entregue",
+      "desc": "[São José dos Campos] O pacote foi assinado! O signatário é [porteiro], se você tiver alguma dúvida, entre em contato com: 08000550050, se você tiver algum problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "ALAN RODRIGO PIMENTEL"
+    },
+    {
       "time": "2026-08-07 07:25:21",
       "status": "Em Rota de Entrega",
       "desc": "O entregador [São José dos Campos] [SJC-SP], A****L está enviando a encomenda. Se você tiver algum problema ou reclamação, ligue para o número da filial: 08000550050",
@@ -63,8 +69,8 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-08-06T22:23:09.181731",
-  "last_checked_at": "2026-08-07T14:47:31.414036",
-  "last_status": "Em Rota de Entrega",
-  "delivered": false,
-  "delivered_at": null
+  "last_checked_at": "2026-08-07T18:43:50.903762",
+  "last_status": "Pedido Entregue",
+  "delivered": true,
+  "delivered_at": "2026-08-07 13:02:37"
 }
