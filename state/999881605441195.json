@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-08-07 07:25:21",
+      "status": "Em Rota de Entrega",
+      "desc": "O entregador [São José dos Campos] [SJC-SP], A****L está enviando a encomenda. Se você tiver algum problema ou reclamação, ligue para o número da filial: 08000550050",
+      "deliveryName": "ALAN RODRIGO PIMENTEL"
+    },
+    {
       "time": "2026-08-07 04:25:29",
       "status": "Em transferencia",
       "desc": "[São José dos Campos] Chegada da encomenda expressa [SJC-SP]",
@@ -57,8 +63,8 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-08-06T22:23:09.181731",
-  "last_checked_at": "2026-08-07T08:49:27.740781",
-  "last_status": "Em transferencia",
+  "last_checked_at": "2026-08-07T12:45:16.876431",
+  "last_status": "Em Rota de Entrega",
   "delivered": false,
   "delivered_at": null
 }
