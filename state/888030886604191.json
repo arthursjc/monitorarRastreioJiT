@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-08-25 03:49:14",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Saída da encomenda expressa [SP BRE] enviada para [DC GRU-SP]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-08-25 03:25:49",
       "status": "Em transferencia",
       "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
@@ -21,7 +27,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-08-24T18:28:49.784471",
-  "last_checked_at": "2026-08-25T06:33:19.569221",
+  "last_checked_at": "2026-08-25T10:23:55.252470",
   "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
