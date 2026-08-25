@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-08-25 03:25:49",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-08-24 21:57:13",
       "status": "Em transferencia",
       "desc": "[Campinas] Saída da encomenda expressa [PA PEGAKI-VCP-SP] enviada para [SP BRE]",
@@ -15,7 +21,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-08-24T18:28:49.784471",
-  "last_checked_at": "2026-08-25T02:52:11.316647",
+  "last_checked_at": "2026-08-25T06:33:19.569221",
   "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
