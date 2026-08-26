@@ -1,6 +1,12 @@
 {
   "events": [
     {
+      "time": "2026-08-26 04:41:43",
+      "status": "Em transferencia",
+      "desc": "[São José dos Campos] Chegada da encomenda expressa [SJC-SP]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-08-25 22:31:53",
       "status": "Em transferencia",
       "desc": "[Guarulhos] Saída da encomenda expressa [DC GRU-SP] enviada para [SJC-SP]",
@@ -33,7 +39,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-08-24T18:28:49.784471",
-  "last_checked_at": "2026-08-26T06:35:19.831217",
+  "last_checked_at": "2026-08-26T10:27:32.697915",
   "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
