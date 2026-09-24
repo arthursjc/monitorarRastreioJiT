@@ -1,6 +1,18 @@
 {
   "events": [
     {
+      "time": "2026-09-24 08:26:36",
+      "status": "Em transferencia",
+      "desc": "[Ribeirão Preto] Saída da encomenda expressa [SN RAO] enviada para [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-09-24 07:38:49",
+      "status": "Em transferencia",
+      "desc": "[Ribeirão Preto] Chegada da encomenda expressa [SN RAO]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-09-23 18:28:15",
       "status": "Em transferencia",
       "desc": "[Araraquara] Saída da encomenda expressa [ARA-SP] enviada para [SN RAO]",
@@ -21,7 +33,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-09-23T22:35:54.228225",
-  "last_checked_at": "2026-09-24T08:54:25.132229",
+  "last_checked_at": "2026-09-24T14:33:21.661703",
   "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
