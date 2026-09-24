@@ -1,6 +1,24 @@
 {
   "events": [
     {
+      "time": "2026-09-24 18:41:30",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Saída da encomenda expressa [SP BRE] enviada para [DC GRU-SP]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-09-24 18:28:23",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
+      "time": "2026-09-24 18:28:11",
+      "status": "Em transferencia",
+      "desc": "[Barueri] Chegada da encomenda expressa [SP BRE]",
+      "deliveryName": ""
+    },
+    {
       "time": "2026-09-24 08:26:36",
       "status": "Em transferencia",
       "desc": "[Ribeirão Preto] Saída da encomenda expressa [SN RAO] enviada para [SP BRE]",
@@ -33,7 +51,7 @@
   ],
   "fail_count": 0,
   "first_seen_at": "2026-09-23T22:35:54.228225",
-  "last_checked_at": "2026-09-24T19:41:07.189978",
+  "last_checked_at": "2026-09-24T22:53:55.633786",
   "last_status": "Em transferencia",
   "delivered": false,
   "delivered_at": null
