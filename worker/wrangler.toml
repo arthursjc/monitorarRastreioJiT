@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-10-21"
 
 [triggers]
-crons = ["0 */2 * * *"]
+crons = ["0 * * * *"]
 
 [vars]
 WAYBILL_NO = "888030708823905,888030674620597"

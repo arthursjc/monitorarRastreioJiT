@@ -1,12 +1,12 @@
 # jt-monitor
 
-Monitora encomendas J&T, Jadlog, Loggi e Correios/Sedex a cada 2 horas. A execucao acontece integralmente no Cloudflare Worker, o historico fica no Workers KV e os alertas sao enviados ao WhatsApp pela Green API.
+Monitora encomendas J&T, Jadlog, Loggi e Correios/Sedex a cada hora. A execucao acontece integralmente no Cloudflare Worker, o historico fica no Workers KV e os alertas sao enviados ao WhatsApp pela Green API.
 
 O GitHub nao executa rastreios. Ele guarda o codigo, roda os testes e publica uma nova versao do Worker quando a pasta `worker/` muda na branch `main`.
 
 ## Arquitetura
 
-1. O Cron Trigger da Cloudflare chama o Worker a cada 2 horas.
+1. O Cron Trigger da Cloudflare chama o Worker a cada hora.
 2. O Worker consulta as transportadoras configuradas.
 3. Os eventos sao comparados com o estado salvo no binding KV `TRACKING_STATE`.
 4. Eventos novos geram uma mensagem via Green API.
@@ -73,7 +73,7 @@ npm run check
 npm run deploy
 ```
 
-Depois do deploy, o Cron Trigger `0 */2 * * *` aparece no painel da Cloudflare. Expressoes cron da Cloudflare usam UTC.
+Depois do deploy, o Cron Trigger `0 * * * *` aparece no painel da Cloudflare. Expressoes cron da Cloudflare usam UTC.
 
 ## CI/CD pelo GitHub
 
