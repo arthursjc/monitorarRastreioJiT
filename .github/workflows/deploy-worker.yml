@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      run_tracking:
+        description: Executar uma rodada completa apos o deploy
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -95,3 +100,18 @@ jobs:
           }).then(async r => { const body = await r.text();
           if (!r.ok) throw new Error('teste WhatsApp HTTP ' + r.status + ': ' + body);
           console.log(body); })"
+
+      - name: Executar rastreamento real
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.run_tracking) ||
+          contains(github.event.head_commit.message, '[run-tracker]')
+        env:
+          RUN_TOKEN: ${{ secrets.RUN_TOKEN }}
+        run: >-
+          node -e "fetch('https://jt-monitor.alptecbr.workers.dev/run', {
+          method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RUN_TOKEN }
+          }).then(async r => { const body = await r.text();
+          if (!r.ok) throw new Error('rastreamento HTTP ' + r.status + ': ' + body);
+          const data = JSON.parse(body); console.log(JSON.stringify(data, null, 2));
+          const failures = data.results.filter(x => x.status === 'error');
+          if (failures.length) throw new Error(failures.length + ' rastreamento(s) falharam'); })"
