@@ -10,8 +10,10 @@ Variaveis de ambiente:
   CORREIOS_CODES    Codigos Correios/Sedex separados por virgula
   CORREIOS_LABELS   Apelidos: "AD687043754BR=Pedido Sedex"
   PACOTEVICIO_API_KEY  Chave RapidAPI para rastreio Correios/J&T via PacoteVicio
-  CALLMEBOT_PHONE   Ex: 5512988416345
-  CALLMEBOT_APIKEY  API key CallMeBot
+  WHATSAPP_PHONE       DDI + DDD + numero, somente digitos. Ex: 5512988416345
+  GREEN_API_INSTANCE_ID  ID da instancia Green API
+  GREEN_API_TOKEN      Token da instancia Green API
+  GREEN_API_URL        URL base opcional (default: https://api.green-api.com)
   STATE_DIR         Pasta de estado (default: state)
 """
 
@@ -21,7 +23,6 @@ import os
 import random
 import sys
 import time
-import urllib.parse
 from datetime import datetime
 from pathlib import Path
 
@@ -823,21 +824,33 @@ def build_error_message(waybill, label):
 # ── WhatsApp ──────────────────────────────────────────────────────────────────
 
 def send_whatsapp(message):
-    phone = env("CALLMEBOT_PHONE", required=True).strip().lstrip("+")
-    apikey = env("CALLMEBOT_APIKEY", required=True).strip()
-    # Monta URL manualmente para evitar double-encoding do requests
-    text_encoded = urllib.parse.quote(message, safe="")
-    url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={text_encoded}&apikey={apikey}"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
-    r = requests.get(url, headers=headers, timeout=20)
-    print(f"[callmebot] status={r.status_code} body={r.text[:200]}")
+    raw_phones = env("WHATSAPP_PHONE", required=True)
+    instance_id = env("GREEN_API_INSTANCE_ID", required=True).strip()
+    token = env("GREEN_API_TOKEN", required=True).strip()
+    api_url = env("GREEN_API_URL", "https://api.green-api.com").strip().rstrip("/")
 
-    if r.status_code == 403:
-        # Fallback: mensagem simples sem emojis para diagnostico
-        simple = urllib.parse.quote(f"J&T tracker: {message[:80]}", safe="")
-        url2 = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={simple}&apikey={apikey}"
-        r2 = requests.get(url2, headers=headers, timeout=20)
-        print(f"[callmebot-fallback] status={r2.status_code} body={r2.text[:200]}")
+    phones = []
+    for raw_phone in raw_phones.split(","):
+        phone = "".join(ch for ch in raw_phone if ch.isdigit())
+        if phone:
+            phones.append(phone)
+
+    if not phones:
+        raise RuntimeError("WHATSAPP_PHONE nao contem nenhum numero valido")
+
+    url = f"{api_url}/waInstance{instance_id}/sendMessage/{token}"
+    for phone in phones:
+        r = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json={"chatId": f"{phone}@c.us", "message": message},
+            timeout=30,
+        )
+        body = r.text[:200]
+        print(f"[green-api] phone={phone} status={r.status_code} body={body}")
+        if not r.ok:
+            # Nao usa raise_for_status para evitar incluir o token secreto na excecao.
+            raise RuntimeError(f"Green API recusou o envio (HTTP {r.status_code}): {body}")
 
 
 # ── tracker principal ─────────────────────────────────────────────────────────

@@ -1,15 +1,24 @@
 name = "jt-monitor"
 main = "src/index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-10-21"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["0 */2 * * *"]
 
 [vars]
 WAYBILL_NO = "888030708823905,888030674620597"
+WAYBILL_LABELS = ""
+JADLOG_CTE = "13740300131749"
+JADLOG_LABELS = ""
+LOGGI_CODES = ""
+LOGGI_LABELS = ""
+CORREIOS_CODES = "AD687043754BR"
+CORREIOS_LABELS = ""
+JT_PROVIDER = "pacotevicio"
+PACOTEVICIO_CONFIDENCE_LEVEL = "medium"
 
 [[kv_namespaces]]
-binding = "JT_STATE"
+binding = "TRACKING_STATE"
 id = "fcd9ff8e8e3e4d30b19e375ca8402623"
 
 [observability]

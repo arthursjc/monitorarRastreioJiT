@@ -1,117 +1,134 @@
-# jt-tracker
+# jt-monitor
 
-Monitora rastreios de encomendas a cada 2 horas via GitHub Actions. Quando aparece um evento novo, envia um alerta no seu WhatsApp via CallMeBot.
+Monitora encomendas J&T, Jadlog, Loggi e Correios/Sedex a cada 2 horas. A execucao acontece integralmente no Cloudflare Worker, o historico fica no Workers KV e os alertas sao enviados ao WhatsApp pela Green API.
 
-## Como funciona
+O GitHub nao executa rastreios. Ele guarda o codigo, roda os testes e publica uma nova versao do Worker quando a pasta `worker/` muda na branch `main`.
 
-1. Os workflows rodam a cada 2 horas.
-2. `track.py` consulta J&T/Correios via PacoteVicio, Jadlog pelo metodo publico atual e Loggi via rastreamento publico da SuperFrete.
-3. Compara os eventos com o que foi salvo nos arquivos da pasta `state/` no commit anterior.
-4. Se aparecer evento novo, dispara um GET no CallMeBot que cai no seu WhatsApp.
-5. Commita os arquivos de estado atualizados de volta no repo.
+## Arquitetura
 
-## Passo 1: criar o repo
+1. O Cron Trigger da Cloudflare chama o Worker a cada 2 horas.
+2. O Worker consulta as transportadoras configuradas.
+3. Os eventos sao comparados com o estado salvo no binding KV `TRACKING_STATE`.
+4. Eventos novos geram uma mensagem via Green API.
+5. O novo estado e salvo no KV; nenhum commit automatico e criado no repositorio.
 
-Crie um repo novo no GitHub (pode ser privado, melhor) e jogue todos esses arquivos dentro. Estrutura:
+Na primeira consulta de cada codigo, o Worker salva silenciosamente o historico existente. Isso evita disparar todas as movimentacoes antigas durante a migracao.
 
-```
-.
-├── .github/workflows/track.yml
-├── .github/workflows/track-correios.yml
-├── state/
-├── track.py
-├── .gitignore
-└── README.md
-```
+## Configurar os rastreios
 
-## Passo 2: ativar o CallMeBot
+Edite as variaveis nao secretas em `worker/wrangler.toml`:
 
-1. Salve este contato no celular: **+34 644 51 95 23** (nome qualquer, ex: "CallMeBot").
-2. Abra o WhatsApp e envie pra esse numero a mensagem exata: `I allow callmebot to send me messages`
-3. Aguarde a resposta automatica com seu **APIKey** (chega em alguns minutos).
-4. Anote seu telefone com codigo do pais sem o `+`. Exemplo: `5511999999999`.
-
-Doc oficial: https://www.callmebot.com/blog/free-api-whatsapp-messages/
-
-## Passo 3: configurar os secrets no GitHub
-
-No repo, va em **Settings → Secrets and variables → Actions → New repository secret** e crie:
-
-| Nome              | Valor                                                                    |
-|-------------------|--------------------------------------------------------------------------|
-| `WAYBILL_NO`      | `888030695848780`                                                        |
-| `CPF`             | `41795685867`                                                            |
-| `CALLMEBOT_PHONE` | seu telefone com codigo do pais sem `+`, ex `5511999999999`              |
-| `CALLMEBOT_APIKEY`| APIKey que o bot te mandou no WhatsApp                                   |
-
-Para rastrear Correios/Sedex e J&T sem depender de scraping instavel, o projeto usa a API PacoteVicio
-via RapidAPI. O plano BASIC gratuito informa limite de 1.000 requisicoes/mes; por isso o
-workflow dos Correios roda separado, a cada 2 horas, e o workflow principal tambem roda a cada 2 horas
-para J&T, Jadlog e Loggi. Crie tambem:
-
-| Nome                  | Valor                                                                    |
-|-----------------------|--------------------------------------------------------------------------|
-| `CORREIOS_CODES`      | Codigos separados por virgula, ex `AD687043754BR`                        |
-| `CORREIOS_LABELS`     | Opcional. Apelidos, ex `AD687043754BR=Sedex Cliente X`                   |
-| `LOGGI_CODES`         | Codigos separados por virgula, ex `QAW7XWXS`                             |
-| `LOGGI_LABELS`        | Opcional. Apelidos, ex `QAW7XWXS=Pedido Loggi`                           |
-| `PACOTEVICIO_API_KEY` | Secret com a chave `X-RapidAPI-Key` do PacoteVicio para Correios e J&T   |
-
-Como pegar a chave:
-
-1. Acesse https://rapidapi.com/pacotevicio-pacotevicio-default/api/correios-rastreamento-de-encomendas
-2. Assine o plano BASIC gratuito.
-3. Na aba **Endpoints**, confirme que o exemplo usa o host `correios-rastreamento-de-encomendas.p.rapidapi.com` e copie a chave exibida como `X-RapidAPI-Key`.
-4. Cadastre no GitHub em **Settings -> Secrets and variables -> Actions -> New repository secret** com o nome `PACOTEVICIO_API_KEY`.
-
-Esta variable e **opcional**. Use apenas se quiser voltar a J&T para o endpoint oficial antigo:
-
-| Nome          | Valor                                                  |
-|---------------|--------------------------------------------------------|
-| `JT_PROVIDER` | `official` para nao usar PacoteVicio na J&T            |
-
-## Passo 4: ativar o workflow
-
-GitHub Actions vem desabilitado em repos privados as vezes. Va na aba **Actions** do repo e clique em "I understand my workflows, go ahead and enable them" se aparecer.
-
-Depois, clique em **jt-tracker → Run workflow** pra disparar uma rodada manual e ver se ta tudo certo nos logs.
-
-## Como saber se funcionou
-
-- Aba **Actions** mostra o historico de runs. Verde = ok, vermelho = quebrou.
-- Clique numa run e abra o passo "Run tracker" pra ver o log do script. Mensagens esperadas:
-  - `[ok] N eventos no rastreio` → fetch funcionou.
-  - `[ok] sem mudancas` → estado igual ao anterior, sem alerta.
-  - `[novo] N eventos novos` → vai disparar o WhatsApp.
-- Os arquivos da pasta `state/` vao ser atualizados e voce ve o commit feito pelo `jt-tracker-bot`.
-
-## Trocar pra outra encomenda
-
-Edita a variable `WAYBILL_NO` (e o secret `CPF` se for outro destinatario). Apague o arquivo correspondente dentro de `state/` se quiser comecar do zero para uma encomenda.
-
-Para Sedex/Correios, edite `CORREIOS_CODES` em **Variables**. Exemplo:
-
-```
-CORREIOS_CODES=AD687043754BR
-CORREIOS_LABELS=AD687043754BR=Sedex Exemplo
+```toml
+[vars]
+WAYBILL_NO = "codigo-jt-1,codigo-jt-2"
+WAYBILL_LABELS = "codigo-jt-1=Pedido A,codigo-jt-2=Pedido B"
+JADLOG_CTE = "cte-jadlog"
+JADLOG_LABELS = "cte-jadlog=Pedido Jadlog"
+LOGGI_CODES = "codigo-loggi"
+LOGGI_LABELS = "codigo-loggi=Pedido Loggi"
+CORREIOS_CODES = "AA123456789BR"
+CORREIOS_LABELS = "AA123456789BR=Pedido Sedex"
 ```
 
-Para Loggi, edite `LOGGI_CODES` em **Variables**. Exemplo:
+Listas e apelidos podem ficar vazios. O cron ignora uma transportadora sem codigos.
 
+## Secrets do rastreador
+
+Entre na pasta `worker`, autentique o Wrangler e cadastre cada secret pelo prompt interativo:
+
+```bash
+npx wrangler login
+npx wrangler secret put CPF
+npx wrangler secret put PACOTEVICIO_API_KEY
+npx wrangler secret put WHATSAPP_PHONE
+npx wrangler secret put GREEN_API_INSTANCE_ID
+npx wrangler secret put GREEN_API_TOKEN
+npx wrangler secret put RUN_TOKEN
 ```
-LOGGI_CODES=QAW7XWXS
-LOGGI_LABELS=QAW7XWXS=Pedido Loggi
+
+Valores esperados:
+
+| Secret | Valor |
+|---|---|
+| `CPF` | CPF usado nas consultas J&T, somente digitos |
+| `PACOTEVICIO_API_KEY` | Chave RapidAPI usada por J&T e Correios |
+| `WHATSAPP_PHONE` | Destinatario com DDI + DDD + numero, somente digitos |
+| `GREEN_API_INSTANCE_ID` | `idInstance` fornecido pela Green API |
+| `GREEN_API_TOKEN` | `apiTokenInstance` fornecido pela Green API |
+| `RUN_TOKEN` | Token aleatorio longo para proteger `/run` e `/test-whatsapp` |
+
+Para desenvolvimento local, copie `worker/.dev.vars.example` para `worker/.dev.vars` e preencha os valores. O arquivo real e ignorado pelo Git.
+
+Como alternativa recomendada para deploy automatico, mantenha esses mesmos nomes nos secrets do GitHub. A action oficial sincroniza os valores como secrets do Worker durante a publicacao; eles nunca entram no `wrangler.toml`.
+
+## Primeiro deploy
+
+O namespace KV atual ja esta configurado em `worker/wrangler.toml`. Para validar e publicar manualmente:
+
+```bash
+cd worker
+npm ci
+npm test
+npm run check
+npm run deploy
 ```
 
-## Custo
+Depois do deploy, o Cron Trigger `0 */2 * * *` aparece no painel da Cloudflare. Expressoes cron da Cloudflare usam UTC.
 
-GitHub Actions tem 2000 min/mes free em repo privado e ilimitado em publico. Para Correios/J&T, o PacoteVicio informa plano gratuito de 1.000 requisicoes/mes; com o intervalo atual de 2 em 2 horas, 1 codigo usa cerca de 360 requisicoes/mes.
+## CI/CD pelo GitHub
 
-## Limitacoes conhecidas
+Cadastre estes secrets de infraestrutura no repositorio GitHub:
 
-- A J&T usa PacoteVicio por padrao quando `PACOTEVICIO_API_KEY` existe. Para voltar ao endpoint oficial antigo, defina `JT_PROVIDER=official`.
-- Correios e J&T dependem da disponibilidade do PacoteVicio/RapidAPI e da cota do plano escolhido.
-- A Jadlog ainda usa consulta publica propria, porque ela nao aparece na API PacoteVicio.
-- A Loggi usa o rastreamento publico da SuperFrete, entao depende desse endpoint continuar publico.
-- CallMeBot e gratuito mas nao tem SLA. Pra producao seria melhor um servico pago (Twilio, etc).
-- O cron do GitHub Actions tem um delay tipico de 1-5 min em relacao ao horario marcado. Nao da pra confiar em "exato" de 2 em 2 horas.
+| Secret | Finalidade |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | Identifica a conta Cloudflare |
+| `CLOUDFLARE_API_TOKEN` | Token com permissao para editar Workers |
+
+Cadastre tambem os secrets de runtime listados anteriormente: `CPF`, `PACOTEVICIO_API_KEY`, `WHATSAPP_PHONE`, `GREEN_API_INSTANCE_ID`, `GREEN_API_TOKEN` e `RUN_TOKEN`.
+
+O workflow `.github/workflows/deploy-worker.yml` executa testes e `wrangler deploy` em pushes para `main` que alterem o Worker. Pull requests executam validacao sem publicar.
+
+Durante o deploy, a action oficial envia os secrets do GitHub diretamente para os bindings secretos do Worker. Em runtime, o rastreador le somente os valores armazenados pela Cloudflare.
+
+## Testes e execucao manual
+
+O endpoint raiz e publico e retorna somente o status e a quantidade de codigos configurados:
+
+```text
+GET https://SEU-WORKER.workers.dev/
+```
+
+Os endpoints de acao aceitam apenas `POST` com o `RUN_TOKEN`:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer SEU_RUN_TOKEN" \
+  https://SEU-WORKER.workers.dev/test-whatsapp
+
+curl -X POST \
+  -H "Authorization: Bearer SEU_RUN_TOKEN" \
+  https://SEU-WORKER.workers.dev/run
+```
+
+`/test-whatsapp` testa apenas Green API. `/run` executa uma rodada completa. O antigo `/run` publico foi removido.
+
+## Estado e comportamento
+
+- Chaves KV seguem o formato `tracking:<transportadora>:<codigo>`.
+- Estados antigos da J&T salvos pelo Worker anterior continuam sendo lidos.
+- Encomendas entregues deixam de ser consultadas.
+- Depois de 3 falhas consecutivas de consulta, um unico alerta de erro e enviado.
+- Se o WhatsApp falhar, os eventos nao sao confirmados no KV e a notificacao sera tentada novamente no proximo cron.
+- Logs ficam disponiveis na observabilidade do Worker.
+
+## Codigo Python legado
+
+`track.py`, `state/` e `run_local.ps1` foram mantidos como referencia e para diagnostico local. Eles nao fazem parte do agendamento nem do deploy atual.
+
+## Limitacoes
+
+- J&T e Correios dependem da RapidAPI/PacoteVicio e da cota contratada.
+- Jadlog depende do HTML da consulta publica permanecer compativel.
+- Loggi depende do endpoint publico da SuperFrete.
+- Green API depende da sessao de WhatsApp continuar autorizada.
+- Cron Triggers podem ter pequeno atraso em relacao ao minuto configurado.

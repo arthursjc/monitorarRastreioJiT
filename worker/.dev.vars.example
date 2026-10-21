@@ -1,0 +1,6 @@
+CPF=seu_cpf_somente_digitos
+PACOTEVICIO_API_KEY=sua_chave_rapidapi
+WHATSAPP_PHONE=5511999999999
+GREEN_API_INSTANCE_ID=seu_id_instance
+GREEN_API_TOKEN=seu_api_token_instance
+RUN_TOKEN=gere_um_token_aleatorio_longo
