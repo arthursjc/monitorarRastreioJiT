@@ -90,6 +90,8 @@ O workflow `.github/workflows/deploy-worker.yml` executa testes e `wrangler depl
 
 Durante o deploy, a action oficial envia os secrets do GitHub diretamente para os bindings secretos do Worker. Em runtime, o rastreador le somente os valores armazenados pela Cloudflare.
 
+O job sempre valida o endpoint publico depois do deploy. Uma mensagem real de teste so e enviada quando a execucao manual marca `test_whatsapp` ou quando a mensagem do commit contem `[test-whatsapp]`.
+
 ## Testes e execucao manual
 
 O endpoint raiz e publico e retorna somente o status e a quantidade de codigos configurados:

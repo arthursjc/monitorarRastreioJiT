@@ -11,6 +11,12 @@ on:
       - "worker/**"
       - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
+    inputs:
+      test_whatsapp:
+        description: Enviar mensagem real de teste apos o deploy
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -70,3 +76,22 @@ jobs:
           GREEN_API_INSTANCE_ID: ${{ secrets.GREEN_API_INSTANCE_ID }}
           GREEN_API_TOKEN: ${{ secrets.GREEN_API_TOKEN }}
           RUN_TOKEN: ${{ secrets.RUN_TOKEN }}
+
+      - name: Verificar endpoint publico
+        run: >-
+          node -e "fetch('https://jt-monitor.alptecbr.workers.dev/').then(async r => {
+          if (!r.ok) throw new Error('health check HTTP ' + r.status);
+          console.log(await r.text()); })"
+
+      - name: Testar WhatsApp real
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.test_whatsapp) ||
+          contains(github.event.head_commit.message, '[test-whatsapp]')
+        env:
+          RUN_TOKEN: ${{ secrets.RUN_TOKEN }}
+        run: >-
+          node -e "fetch('https://jt-monitor.alptecbr.workers.dev/test-whatsapp', {
+          method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RUN_TOKEN }
+          }).then(async r => { const body = await r.text();
+          if (!r.ok) throw new Error('teste WhatsApp HTTP ' + r.status + ': ' + body);
+          console.log(body); })"
