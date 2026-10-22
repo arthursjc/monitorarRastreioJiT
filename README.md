@@ -16,7 +16,7 @@ Na primeira consulta de cada codigo, o Worker salva silenciosamente o historico 
 
 ## Configurar os rastreios
 
-Edite as variaveis nao secretas em `worker/wrangler.toml`:
+No deploy automatico, cadastre as variaveis nao secretas em **Settings > Secrets and variables > Actions > Variables** no GitHub. A esteira copia esses valores para o Worker antes de cada publicacao, portanto o GitHub e a fonte de verdade:
 
 ```toml
 [vars]
@@ -30,7 +30,9 @@ CORREIOS_CODES = "AA123456789BR"
 CORREIOS_LABELS = "AA123456789BR=Pedido Sedex"
 ```
 
-Listas e apelidos podem ficar vazios. O cron ignora uma transportadora sem codigos.
+Use os nomes `WAYBILL_NO`, `WAYBILL_LABELS`, `JADLOG_CTE`, `JADLOG_LABELS`, `LOGGI_CODES`, `LOGGI_LABELS`, `CORREIOS_CODES` e `CORREIOS_LABELS`. Listas e apelidos podem ficar vazios; o cron ignora uma transportadora sem codigos.
+
+Os valores em `worker/wrangler.toml` servem apenas como configuracao para deploy manual/local. No GitHub Actions, eles sao substituidos pelas Repository Variables antes da publicacao.
 
 ## Secrets do rastreador
 
@@ -86,7 +88,7 @@ Cadastre estes secrets de infraestrutura no repositorio GitHub:
 
 Cadastre tambem os secrets de runtime listados anteriormente: `CPF`, `PACOTEVICIO_API_KEY`, `WHATSAPP_PHONE`, `GREEN_API_INSTANCE_ID`, `GREEN_API_TOKEN` e `RUN_TOKEN`.
 
-O workflow `.github/workflows/deploy-worker.yml` executa testes e `wrangler deploy` em pushes para `main` que alterem o Worker. Pull requests executam validacao sem publicar.
+O workflow `.github/workflows/deploy-worker.yml` executa testes e `wrangler deploy` em pushes para `main` que alterem o Worker. Antes do deploy, ele sincroniza as Repository Variables de rastreio com o `wrangler.toml`. Pull requests executam validacao sem publicar.
 
 Durante o deploy, a action oficial envia os secrets do GitHub diretamente para os bindings secretos do Worker. Em runtime, o rastreador le somente os valores armazenados pela Cloudflare.
 

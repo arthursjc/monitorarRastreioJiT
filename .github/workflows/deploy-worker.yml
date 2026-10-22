@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "worker/**"
+      - ".github/scripts/**"
       - ".github/workflows/deploy-worker.yml"
   pull_request:
     paths:
       - "worker/**"
+      - ".github/scripts/**"
       - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
     inputs:
@@ -60,6 +62,10 @@ jobs:
           cache-dependency-path: worker/package-lock.json
       - run: npm ci
         working-directory: worker
+      - name: Sincronizar Repository Variables com o Worker
+        env:
+          REPOSITORY_VARS_JSON: ${{ toJSON(vars) }}
+        run: python .github/scripts/sync_worker_vars.py worker/wrangler.toml
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v4
         with:
