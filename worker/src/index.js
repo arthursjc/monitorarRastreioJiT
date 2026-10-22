@@ -367,6 +367,19 @@ function buildDeliveredMessage(carrier, code, label, trackingUrl) {
   return `✅ ${carrier} - ${label || code}\n\nSua encomenda foi entregue com sucesso! 🎉\n\n🔗 ${trackingUrl}${code}`;
 }
 
+function buildInitialMessage(carrier, code, label, events, trackingUrl) {
+  const lines = [`📦 ${carrier} - ${label || code}`, "\n🔔 Monitoramento iniciado!"];
+  const latestEvent = events[0];
+  if (latestEvent) {
+    const text = cleanText(latestEvent.status, latestEvent.desc);
+    lines.push(`\nStatus atual:\n${pickEmoji(text)} ${formatDateTime(latestEvent.time)}\n${text}`);
+  } else {
+    lines.push("\nAinda não há movimentações disponíveis para esta encomenda.");
+  }
+  lines.push(`\n🔗 ${trackingUrl}${code}`);
+  return lines.join("\n");
+}
+
 function buildErrorMessage(carrier, code, label, trackingUrl) {
   return `⚠️ ${carrier} - ${label || code}\n\nFalha ao consultar rastreio por ${MAX_FAIL} vezes seguidas. Verifique manualmente.\n\n🔗 ${trackingUrl}${code}`;
 }
@@ -436,6 +449,12 @@ async function trackOne(env, carrierId, code, label) {
   const now = new Date().toISOString();
   const deliveredEvent = events.find(carrier.delivered);
   if (!state) {
+    const initialMessage = deliveredEvent
+      ? buildDeliveredMessage(carrier.name, code, label, carrier.trackingUrl)
+      : buildInitialMessage(carrier.name, code, label, events, carrier.trackingUrl);
+    // Só confirma o histórico depois do WhatsApp. Se o envio falhar, a próxima
+    // rodada tenta novamente e o primeiro aviso nunca é perdido.
+    await sendWhatsApp(env, initialMessage);
     await saveState(env, carrierId, code, {
       events,
       failCount: 0,
@@ -445,8 +464,8 @@ async function trackOne(env, carrierId, code, label) {
       delivered: Boolean(deliveredEvent),
       deliveredAt: deliveredEvent?.time || null,
     });
-    console.log(`[bootstrap] ${carrierId} ${code}: ${events.length} eventos salvos sem notificacao`);
-    return { carrier: carrierId, code, status: "bootstrapped", events: events.length };
+    console.log(`[iniciado] ${carrierId} ${code}: status inicial enviado; ${events.length} eventos salvos`);
+    return { carrier: carrierId, code, status: deliveredEvent ? "delivered" : "initialized", events: events.length };
   }
 
   const newEvents = diffEvents(state.events || [], events);

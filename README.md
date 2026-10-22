@@ -12,7 +12,7 @@ O GitHub nao executa rastreios. Ele guarda o codigo, roda os testes e publica um
 4. Eventos novos geram uma mensagem via Green API.
 5. O novo estado e salvo no KV; nenhum commit automatico e criado no repositorio.
 
-Na primeira consulta de cada codigo, o Worker salva silenciosamente o historico existente. Isso evita disparar todas as movimentacoes antigas durante a migracao.
+Na primeira consulta de cada codigo, o Worker envia uma confirmacao com o status mais recente (ou informa que ainda nao ha movimentacoes) e salva o historico existente. Nas consultas seguintes, somente eventos novos geram mensagens, evitando repeticoes.
 
 ## Configurar os rastreios
 

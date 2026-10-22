@@ -42,21 +42,60 @@ test("configuração cria rastreios para todas as listas", () => {
   assert.deepEqual(result.map(({ carrier, code }) => [carrier, code]), [["jt", "1"], ["jadlog", "2"], ["loggi", "ABC"], ["correios", "XY123BR"]]);
 });
 
-test("primeira execução inicializa KV sem disparar histórico", async (context) => {
+test("primeira execução envia o status atual uma vez e salva o histórico", async (context) => {
   const kv = new MemoryKv();
   let greenCalls = 0;
-  context.mock.method(globalThis, "fetch", async (url) => {
+  let sentPayload;
+  context.mock.method(globalThis, "fetch", async (url, options) => {
     if (String(url).includes("jtjms-br.com")) {
       return Response.json({ data: { details: [{ scanTime: "2026-10-20 10:00", status: "Coletado", customerTracking: "Origem" }] } });
     }
     greenCalls += 1;
-    return Response.json({ idMessage: "unexpected" });
+    sentPayload = JSON.parse(options.body);
+    return Response.json({ idMessage: "message-id" });
   });
-  const env = { TRACKING_STATE: kv, WAYBILL_NO: "123", JT_PROVIDER: "official", CPF: "12345678900" };
-  const result = await runAll(env);
-  assert.equal(result[0].status, "bootstrapped");
-  assert.equal(greenCalls, 0);
+  const env = {
+    TRACKING_STATE: kv,
+    WAYBILL_NO: "123",
+    JT_PROVIDER: "official",
+    CPF: "12345678900",
+    WHATSAPP_PHONE: "5512999999999",
+    GREEN_API_INSTANCE_ID: "1234",
+    GREEN_API_TOKEN: "secret",
+  };
+  const firstResult = await runAll(env);
+  assert.equal(firstResult[0].status, "initialized");
+  assert.equal(greenCalls, 1);
+  assert.match(sentPayload.message, /Monitoramento iniciado/);
+  assert.match(sentPayload.message, /Coletado/);
   assert.equal(JSON.parse(kv.values.get("tracking:jt:123")).events.length, 1);
+
+  const secondResult = await runAll(env);
+  assert.equal(secondResult[0].status, "unchanged");
+  assert.equal(greenCalls, 1);
+});
+
+test("primeira execução sem eventos também confirma o monitoramento", async (context) => {
+  const kv = new MemoryKv();
+  let sentPayload;
+  context.mock.method(globalThis, "fetch", async (url, options) => {
+    if (String(url).includes("jtjms-br.com")) return Response.json({ data: { details: [] } });
+    sentPayload = JSON.parse(options.body);
+    return Response.json({ idMessage: "message-id" });
+  });
+  const env = {
+    TRACKING_STATE: kv,
+    WAYBILL_NO: "123",
+    JT_PROVIDER: "official",
+    CPF: "12345678900",
+    WHATSAPP_PHONE: "5512999999999",
+    GREEN_API_INSTANCE_ID: "1234",
+    GREEN_API_TOKEN: "secret",
+  };
+  const result = await runAll(env);
+  assert.equal(result[0].status, "initialized");
+  assert.match(sentPayload.message, /Ainda não há movimentações/);
+  assert.deepEqual(JSON.parse(kv.values.get("tracking:jt:123")).events, []);
 });
 
 test("evento posterior envia WhatsApp e atualiza KV", async (context) => {
